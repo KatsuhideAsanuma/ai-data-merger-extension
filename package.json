@@ -60,7 +60,7 @@
         "explorer/context": [
           {
             "command": "extension.addFileToQueue",
-            "title": "$(add) Add to Merge Queue",
+            "title": "$(add) Add to File Merge Queue",
             "when": "explorerResourceIsFolder || resourceLangId == markdown", 
             "group": "navigation"
           }
