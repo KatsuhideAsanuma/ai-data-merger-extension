@@ -80,7 +80,7 @@
           {
             "id": "aiDataMerger",
             "title": "AI Data Merger",
-            "icon": "resources/icon.png"
+            "icon": "resources/icon_transparent.png"
           }
         ]
       },

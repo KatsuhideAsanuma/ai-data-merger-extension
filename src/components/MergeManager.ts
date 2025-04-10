@@ -102,11 +102,25 @@ export class MergeManager {
         mergedContent.push(`purpose: AIプロンプト用データ`);
         mergedContent.push(`---\n`);
         
-        // 目次の生成
-        mergedContent.push(`# 目次\n`);
+        // 目次生成の前に、マークダウンファイルの見出しを抽出するための処理
+        type TocEntry = {
+            filePath: string;
+            fileName: string;
+            fileId: string; 
+            headings: {level: number; text: string; id: string}[];
+        };
+
+        // カテゴリとファイルごとの目次情報を格納する配列
+        const tocStructure: {category: string; files: TocEntry[]}[] = [];
+
+        // 見出し抽出のためにファイルを先に分析
         for (const category of this.configManager.categories) {
             if(queue[category] && queue[category].length > 0) {
-                mergedContent.push(`- [${category}](#${category.toLowerCase().replace(/\s+/g, '-')})`);
+                const categoryEntry = {
+                    category: category,
+                    files: [] as TocEntry[]
+                };
+                
                 for (const filePath of queue[category]) {
                     if (fs.existsSync(filePath)) {
                         const fileName = path.basename(filePath);
@@ -114,11 +128,78 @@ export class MergeManager {
                         const fileId = fileName.toLowerCase()
                             .replace(/\s+/g, '-')
                             .replace(/[^\w-]/g, '');
-                        mergedContent.push(`  - [${fileName}](#${fileId})`);
+                        
+                        const tocEntry: TocEntry = {
+                            filePath,
+                            fileName,
+                            fileId,
+                            headings: []
+                        };
+                        
+                        // マークダウンファイルの場合は見出しを抽出
+                        if (path.extname(filePath).toLowerCase() === '.md' && fs.statSync(filePath).isFile()) {
+                            try {
+                                const fileContent = fs.readFileSync(filePath, 'utf8');
+                                const lines = fileContent.split('\n');
+                                
+                                // 見出し行を抽出（# で始まる行）
+                                for (const line of lines) {
+                                    const headingMatch = line.trim().match(/^(#{1,3})\s+(.+)$/);
+                                    if (headingMatch) {
+                                        const level = headingMatch[1].length;
+                                        const text = headingMatch[2];
+                                        
+                                        // 見出しIDの生成（URLセーフな形式に）
+                                        const headingId = text.toLowerCase()
+                                            .replace(/\s+/g, '-')
+                                            .replace(/[^\w-]/g, '')
+                                            .replace(/^-+|-+$/g, '');
+                                        
+                                        // ファイルIDと見出しIDを組み合わせてユニークなIDを作成
+                                        const uniqueId = `${fileId}-${headingId}`;
+                                        
+                                        // 目次用に格納
+                                        tocEntry.headings.push({
+                                            level, 
+                                            text,
+                                            id: uniqueId
+                                        });
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`見出し抽出中にエラーが発生しました: ${filePath}`, error);
+                            }
+                        }
+                        
+                        categoryEntry.files.push(tocEntry);
+                    }
+                }
+                
+                tocStructure.push(categoryEntry);
+            }
+        }
+
+        // 目次の生成
+        mergedContent.push(`# 目次\n`);
+
+        // カテゴリとファイルの目次を生成
+        for (const catEntry of tocStructure) {
+            mergedContent.push(`- [${catEntry.category}](#${catEntry.category.toLowerCase().replace(/\s+/g, '-')})`);
+            
+            for (const fileEntry of catEntry.files) {
+                mergedContent.push(`  - [${fileEntry.fileName}](#${fileEntry.fileId})`);
+                
+                // マークダウンファイルの見出しを目次に含める（H1, H2, H3のみ）
+                if (fileEntry.headings.length > 0) {
+                    for (const heading of fileEntry.headings) {
+                        // レベルに応じてインデントを調整
+                        const indent = '  '.repeat(heading.level + 1);
+                        mergedContent.push(`${indent}- [${heading.text}](#${heading.id})`);
                     }
                 }
             }
         }
+
         mergedContent.push(``);
 
         // configManagerで定義されたカテゴリ順にマージ
@@ -129,6 +210,11 @@ export class MergeManager {
                     // ファイルが存在するか確認
                     if (fs.existsSync(filePath)) {
                         const fileName = path.basename(filePath);
+                        
+                        // ファイルのIDを取得（目次生成時と同じロジック）
+                        const fileId = fileName.toLowerCase()
+                            .replace(/\s+/g, '-')
+                            .replace(/[^\w-]/g, '');
                         
                         // ファイルパスの情報（ワークスペースルートからの相対パス）
                         let relativePath = filePath;
@@ -206,13 +292,54 @@ export class MergeManager {
                                 mergedContent.push(`> パス: \`${relativePath}\`, 行数: ${lines}`);
                                 mergedContent.push(``);
                                 
-                                // コード形式でファイル内容を出力
-                                mergedContent.push("```" + (language ? language : ''));
-                                mergedContent.push(fileContent);
-                                if (!fileContent.endsWith('\n')) {
-                                    mergedContent.push("");
+                                // マークダウンファイルの場合は特別な処理をする
+                                if (ext === 'md') {
+                                    // マークダウンファイルの場合、見出し階層を調整する
+                                    const mdLines = fileContent.split('\n');
+                                    
+                                    // マークダウンコンテンツをインラインで追加（見出しレベルを調整）
+                                    for (const line of mdLines) {
+                                        // 見出し行（#で始まる行）の処理
+                                        if (line.trim().startsWith('#')) {
+                                            // 現在の見出しレベルを取得
+                                            const headingMatch = line.match(/^(#+)\s+(.*)$/);
+                                            if (headingMatch) {
+                                                const currentLevel = headingMatch[1].length;
+                                                const headingText = headingMatch[2];
+                                                
+                                                // 見出しIDを生成（目次と同じロジック）
+                                                const headingId = headingText.toLowerCase()
+                                                    .replace(/\s+/g, '-')
+                                                    .replace(/[^\w-]/g, '')
+                                                    .replace(/^-+|-+$/g, '');
+                                                
+                                                // IDタグを追加した見出し
+                                                const uniqueId = `${fileId}-${headingId}`;
+                                                
+                                                // マージファイル内では既に ### レベルでファイル名を出力しているため、
+                                                // 見出しレベルを3つ増やす（最大6レベルまで）
+                                                const newLevel = Math.min(currentLevel + 3, 6);
+                                                const newHeading = '#'.repeat(newLevel) + ' ' + headingText + ` <a id="${uniqueId}"></a>`;
+                                                mergedContent.push(newHeading);
+                                            } else {
+                                                mergedContent.push(line);
+                                            }
+                                        } else {
+                                            // 見出し以外の行はそのまま追加
+                                            mergedContent.push(line);
+                                        }
+                                    }
+                                    // 最後に空行を追加
+                                    mergedContent.push('');
+                                } else {
+                                    // 通常のファイルはコード形式で出力
+                                    mergedContent.push("```" + (language ? language : ''));
+                                    mergedContent.push(fileContent);
+                                    if (!fileContent.endsWith('\n')) {
+                                        mergedContent.push("");
+                                    }
+                                    mergedContent.push("```\n");
                                 }
-                                mergedContent.push("```\n");
                             } catch (error) {
                                 mergedContent.push(`### ${fileName}`);
                                 mergedContent.push(`> パス: \`${relativePath}\``);
