@@ -60,7 +60,22 @@
         "explorer/context": [
           {
             "command": "extension.addFileToQueue",
-            "when": "explorerResourceIsFolder || resourceLangId == markdown",
+            "title": "$(add) Add to Merge Queue",
+            "when": "explorerResourceIsFolder || resourceLangId == markdown", 
+            "group": "navigation"
+          }
+        ],
+        "view/title": [
+          {
+            "command": "extension.generateMergedFile",
+            "title": "$(merge) Generate Merged File",
+            "when": "view == selectionTreeView",
+            "group": "navigation"
+          },
+          {
+            "command": "extension.clearQueue",
+            "title": "$(trash) Clear Queue",
+            "when": "view == selectionTreeView",
             "group": "navigation"
           }
         ]
