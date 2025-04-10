@@ -4,74 +4,76 @@
     "description": "ファイルをマージしてAI参照データを生成する拡張機能",
     "version": "0.0.1",
     "engines": {
-      "vscode": "^1.60.0"
+        "vscode": "^1.60.0"
     },
     "categories": [
-      "Other"
+        "Other"
     ],
     "activationEvents": [
-      "onCommand:extension.addFileToQueue",
-      "onCommand:extension.clearQueue",
-      "onCommand:extension.generateMergedFile",
-      "onCommand:extension.reexecuteMerge"
+        "onCommand:extension.addFileToQueue",
+        "onCommand:extension.clearQueue",
+        "onCommand:extension.generateMergedFile",
+        "onCommand:extension.reexecuteMerge"
     ],
     "main": "./out/extension.js",
     "contributes": {
-      "commands": [
-        {
-          "command": "extension.addFileToQueue",
-          "title": "Add File to Merge Queue"
+        "commands": [
+            {
+                "command": "extension.addFileToQueue",
+                "title": "Add File to Merge Queue"
+            },
+            {
+                "command": "extension.clearQueue",
+                "title": "Clear Merge Queue"
+            },
+            {
+                "command": "extension.generateMergedFile",
+                "title": "Generate Merged File"
+            },
+            {
+                "command": "extension.reexecuteMerge",
+                "title": "Re-Execute Merge from History"
+            }
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "selectionTreeView",
+                    "name": "Selected Files"
+                },
+                {
+                    "id": "historyTreeView",
+                    "name": "Merge History"
+                }
+            ]
         },
-        {
-          "command": "extension.clearQueue",
-          "title": "Clear Merge Queue"
-        },
-        {
-          "command": "extension.generateMergedFile",
-          "title": "Generate Merged File"
-        },
-        {
-          "command": "extension.reexecuteMerge",
-          "title": "Re-Execute Merge from History"
+        "configuration": {
+            "type": "object",
+            "title": "AI Data Merger Configuration",
+            "properties": {
+                "aiDataMerger.outputPath": {
+                    "type": "string",
+                    "default": "./merged",
+                    "description": "マージ後のファイル出力先フォルダ"
+                },
+                "aiDataMerger.defaultFileName": {
+                    "type": "string",
+                    "default": "merged_data.md",
+                    "description": "マージファイルのデフォルトファイル名"
+                }
+            }
         }
-      ],
-      "views": {
-        "explorer": [
-          {
-            "id": "selectionTreeView",
-            "name": "Selected Files"
-          },
-          {
-            "id": "historyTreeView",
-            "name": "Merge History"
-          }
-        ]
-      },
-      "configuration": {
-        "type": "object",
-        "title": "AI Data Merger Configuration",
-        "properties": {
-          "aiDataMerger.outputPath": {
-            "type": "string",
-            "default": "./merged",
-            "description": "マージ後のファイル出力先フォルダ"
-          },
-          "aiDataMerger.defaultFileName": {
-            "type": "string",
-            "default": "merged_data.md",
-            "description": "マージファイルのデフォルトファイル名"
-          }
-        }
-      }
     },
     "scripts": {
-      "vscode:prepublish": "npm run compile",
-      "compile": "tsc -p ./"
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "package": "vsce package"
     },
+    "publisher": "katsuhide-asanuma",
     "devDependencies": {
-      "typescript": "^4.0.0",
-      "@types/node": "^14.0.0",
-      "vscode": "^1.1.37"
+        "@types/node": "^14.0.0",
+        "@vscode/vsce": "^3.3.2",
+        "typescript": "^4.0.0",
+        "vscode": "^1.1.37"
     }
-  }
-  
+}
