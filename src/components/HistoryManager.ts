@@ -1,12 +1,13 @@
-import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 
 export interface MergeHistoryItem {
     timestamp: string;
     queue: { [category: string]: string[] };
     outputPath: string;
     fileName: string;
+    name?: string; // マージリストの名前（表示用）
 }
 
 export class HistoryManager {

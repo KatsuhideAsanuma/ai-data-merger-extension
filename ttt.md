@@ -1,3 +1,74 @@
+## プロンプト出力
+
+### LICENSE
+
+MIT License
+
+Copyright (c) 2025 Katsuhide Asanuma
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+## 設計書出力
+
+### README.md
+
+# ai-data-merger-extension
+
+# AI Data Merger Extension
+
+このVSCode拡張は、エクスプローラーから追加した複数のファイルをマージし、AI用の参照データファイル（Markdown形式）を生成するためのツールです。
+
+## 特徴
+- コンテキストメニューからのファイル追加
+- サイドバー上でファイル順序の編集や削除が可能なツリービュー
+- ユーザー設定（大項目名称・順序、出力先、ファイル名）の指定
+- マージ実行時の履歴管理と再実行機能
+
+## プロジェクト構成
+
+（上記の構成図を参照）
+
+## 使用方方法
+1：　`npm run package` で拡張機能をパッケージ化
+2：　`vsce publish` で拡張機能を公開
+3：　(cursor)cursor --install-extension path/to/ai-data-merger-extension-0.0.1.vsix
+
+## デバッグ
+1. `npm install` で依存パッケージをインストール
+2. `npm run compile` でTypeScriptをコンパイル
+3. VSCodeでデバッグ実行
+
+
+### clearQueue.ts
+
+import * as vscode from 'vscode';
+
+export function clearQueue() {
+    vscode.commands.executeCommand('extension.clearQueue');
+}
+
+
+## 参照コード出力
+
+### package.json
+
 {
     "name": "ai-data-merger-extension",
     "displayName": "AI Data Merger Extension",
@@ -18,8 +89,7 @@
       "onCommand:extension.removeFileFromQueue",
       "onCommand:extension.moveFileUp",
       "onCommand:extension.moveFileDown",
-      "onCommand:extension.loadProjectMergeList",
-      "onCommand:extension.addHistoryToMergeList"
+      "onCommand:extension.loadProjectMergeList"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -68,11 +138,6 @@
           "command": "extension.loadProjectMergeList",
           "title": "Load Project Merge List",
           "icon": "$(notebook)"
-        },
-        {
-          "command": "extension.addHistoryToMergeList",
-          "title": "Add to Project Merge Lists",
-          "icon": "$(add)"
         }
       ],
       "viewsContainers": {
@@ -141,12 +206,6 @@
           {
             "command": "extension.moveFileDown",
             "when": "view == selectionTreeView && viewItem == file",
-            "group": "inline"
-          },
-          {
-            "command": "extension.addHistoryToMergeList",
-            "title": "Add to Project Merge Lists",
-            "when": "view == historyTreeView && viewItem == historyItem",
             "group": "inline"
           }
         ]

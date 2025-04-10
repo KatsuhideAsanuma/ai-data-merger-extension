@@ -91,8 +91,8 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         try {
+            // ファイル名を指定せずにマージを実行（ダイアログが表示される）
             await mergeManager.generateMergedFile();
-            // メッセージはMergeManagerで表示するため、ここでは表示しない
             historyTreeProvider.refresh();
         } catch (error) {
             vscode.window.showErrorMessage(`マージ処理中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
@@ -103,11 +103,31 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('extension.reexecuteMerge', async (historyItem) => {
         try {
             mergeManager.loadHistoryMerge(historyItem);
-            await mergeManager.generateMergedFile();
-            // メッセージはMergeManagerで表示するため、ここでは表示しない
+            
+            // 出力パスとファイル名を結合
+            let fullOutputPath = '';
+            if (historyItem.outputPath && historyItem.fileName) {
+                fullOutputPath = path.join(historyItem.outputPath, historyItem.fileName);
+            }
+            
+            // 履歴に保存されているファイル名を使用してマージを実行
+            await mergeManager.generateMergedFile(fullOutputPath);
         } catch (error) {
             vscode.window.showErrorMessage(`再実行中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
             console.error('再実行エラー詳細:', error);
+        }
+    }));
+
+    // 履歴アイテムをマージリストに追加するコマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.addHistoryToMergeList', async (item) => {
+        try {
+            if (item && item.historyItem) {
+                // マージリストに追加
+                await mergeManager.addHistoryToProjectMergeList(item.historyItem);
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`マージリストへの追加に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('マージリスト追加エラー:', error);
         }
     }));
 
@@ -131,6 +151,77 @@ export function activate(context: vscode.ExtensionContext) {
                 selectionTreeProvider.refresh();
                 vscode.window.showInformationMessage(`ファイルを「${selectedCategory}」カテゴリに移動しました`);
             }
+        }
+    }));
+
+    // ファイルの削除コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.removeFileFromQueue', (item: any) => {
+        if (item && item.category && typeof item.index === 'number') {
+            const filePath = queueManager.getQueue()[item.category][item.index];
+            queueManager.removeFile(item.category, item.index);
+            selectionTreeProvider.refresh();
+            vscode.window.showInformationMessage(`ファイルをキューから削除しました: ${path.basename(filePath)}`);
+        }
+    }));
+
+    // ファイルを上に移動コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.moveFileUp', (item: any) => {
+        if (item && item.category && typeof item.index === 'number') {
+            // インデックスが0より大きい場合のみ上に移動可能
+            if (item.index > 0) {
+                queueManager.moveFile(item.category, item.index, item.index - 1);
+                selectionTreeProvider.refresh();
+            }
+        }
+    }));
+
+    // ファイルを下に移動コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.moveFileDown', (item: any) => {
+        if (item && item.category && typeof item.index === 'number') {
+            const files = queueManager.getQueue()[item.category];
+            // インデックスが配列の最後の要素より小さい場合のみ下に移動可能
+            if (files && item.index < files.length - 1) {
+                queueManager.moveFile(item.category, item.index, item.index + 1);
+                selectionTreeProvider.refresh();
+            }
+        }
+    }));
+
+    // プロジェクト固有のマージリストを読み込み実行するコマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.loadProjectMergeList', async () => {
+        try {
+            // プロジェクトのマージリストを読み込む
+            const mergeLists = await mergeManager.loadProjectMergeLists();
+            
+            if (mergeLists.length === 0) {
+                vscode.window.showInformationMessage('プロジェクトにマージリストが保存されていません。');
+                return;
+            }
+            
+            // マージリストの選択肢を作成
+            const items = mergeLists.map(item => ({
+                label: item.name || item.fileName,
+                description: `最終更新: ${new Date(item.timestamp).toLocaleString()}`,
+                detail: `ファイル数: ${Object.values(item.queue).reduce((sum, files) => sum + files.length, 0)}`,
+                mergeList: item
+            }));
+            
+            // マージリストを選択
+            const selected = await vscode.window.showQuickPick(items, {
+                placeHolder: '実行するマージリストを選択してください'
+            });
+            
+            if (!selected) {
+                return;
+            }
+            
+            // 選択されたマージリストを実行
+            mergeManager.loadHistoryMerge(selected.mergeList);
+            await mergeManager.generateMergedFile(selected.mergeList.fileName);
+            
+        } catch (error) {
+            vscode.window.showErrorMessage(`マージリストの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('マージリスト読み込みエラー:', error);
         }
     }));
 }
