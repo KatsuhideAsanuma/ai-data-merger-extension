@@ -487,12 +487,16 @@ export class MergeManager {
                                     // JSONとYAMLファイルの場合は構造のみ表示し、コード全体は表示しない
                                     const isDataFile = language === 'json' || language === 'yaml';
                                     
-                                    if (isDataFile) {
-                                        // データファイルは構造のみ表示し、コード全体は表示しない
+                                    // 設定から「データファイルの全コード表示」オプションを取得
+                                    const showDataFileContent = vscode.workspace.getConfiguration('aiDataMerger').get('showDataFileContent') as boolean || false;
+                                    
+                                    if (isDataFile && !showDataFileContent) {
+                                        // データファイルは構造のみ表示し、コード全体は表示しない（デフォルト動作）
                                         mergedContent.push(`> 注: 構造が抽出されたため、ファイル全体のコードは表示されていません。`);
+                                        mergedContent.push(`> この動作は設定の 'aiDataMerger.showDataFileContent' で変更できます。`);
                                         mergedContent.push(``);
                                     } else {
-                                        // 通常のファイルはコード形式で出力（サイズに関わらず全て表示）
+                                        // 通常のファイルやshowDataFileContent=trueの場合はコード形式で出力
                                         mergedContent.push("```" + (language ? language : ''));
                                         mergedContent.push(fileContent);
                                         if (!fileContent.endsWith('\n')) {

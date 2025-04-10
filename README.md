@@ -74,24 +74,43 @@ VSCodeの設定（`settings.json`）で以下の項目をカスタマイズで�
     "python", "java", "cpp", "csharp", "go", "rust", "ruby", "php",
     "html", "css", "xml", "shellscript", "bat", "sql"
     // その他多数のファイル形式をサポート
+  ],
+  "aiDataMerger.showDataFileContent": false,  // JSONやYAMLファイルの全コード表示(falseの場合は構造のみ)
+  "aiDataMerger.categories": [                // マージファイル内のカテゴリ一覧
+    "プロンプト出力",
+    "設計書出力", 
+    "参照コード出力"
+    // カスタムカテゴリを追加可能
   ]
 }
 ```
 
 ### カテゴリのカスタマイズ
 
-プロジェクトルートまたは拡張機能ディレクトリの `config/categories.json` ファイルでカテゴリを定義できます：
+カテゴリは、VSCodeの設定から簡単にカスタマイズできます：
 
-```json
-{
-  "categories": [
-    "プロンプト出力",
-    "設計書出力",
-    "参照コード出力"
-    // カスタムカテゴリを追加可能
-  ]
-}
-```
+1. **設定画面から変更**: 
+   - VSCodeの設定画面（`Ctrl+,`）を開く
+   - 「AI Data Merger」を検索
+   - `aiDataMerger.categories` の配列を編集
+
+2. **settings.jsonで直接編集**:
+   - `settings.json`に以下を追加・編集
+   ```json
+   "aiDataMerger.categories": [
+     "プロンプト出力",
+     "設計書出力",
+     "参照コード出力",
+     "カスタムカテゴリ1",  // 独自のカテゴリを追加
+     "カスタムカテゴリ2"
+   ]
+   ```
+
+### データファイル表示の設定
+
+JSONやYAMLなどのデータファイルの表示方法を設定できます：
+
+- `aiDataMerger.showDataFileContent`: `false`（デフォルト）の場合、データファイルは構造のみ表示され、コード全体は表示されません。`true`に設定すると、データファイルも完全表示されます。
 
 ## 出力ファイル形式
 
@@ -122,7 +141,6 @@ ai-data-merger-extension/
 │   └── utils/              # ユーティリティ関数
 ├── resources/              # アイコンなどのリソース
 ├── config/                 # 設定ファイル
-│   └── categories.json     # カテゴリ定義
 └── merged/                 # デフォルト出力ディレクトリ
 ```
 

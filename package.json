@@ -203,6 +203,20 @@
               "coffeescript"
             ],
             "description": "マージキューに追加可能なファイルタイプ（VSCodeの言語識別子）"
+          },
+          "aiDataMerger.showDataFileContent": {
+            "type": "boolean",
+            "default": true,
+            "description": "JSONやYAMLなどのデータファイルのコード全体を表示するかどうか。falseの場合は構造のみ表示します。"
+          },
+          "aiDataMerger.categories": {
+            "type": "array",
+            "default": [
+              "プロンプト出力",
+              "設計書出力",
+              "参照コード出力"
+            ],
+            "description": "マージファイル内のカテゴリ一覧。ファイルの分類に使用されます。"
           }
         }
       }
