@@ -14,7 +14,12 @@
 
 （上記の構成図を参照）
 
-## セットアップ
+## 使用方方法
+1：　`npm run package` で拡張機能をパッケージ化
+2：　`vsce publish` で拡張機能を公開
+3：　(cursor)cursor --install-extension path/to/ai-data-merger-extension-0.0.1.vsix
+
+## デバッグ
 1. `npm install` で依存パッケージをインストール
 2. `npm run compile` でTypeScriptをコンパイル
 3. VSCodeでデバッグ実行
