@@ -20,21 +20,44 @@ export class MergeManager {
         // ファイル名選択ダイアログを表示
         let fileName = customFileName;
         if (!fileName) {
-            fileName = await vscode.window.showInputBox({
-                prompt: 'マージファイルの名前を入力してください（相対パス可、例: docs/merged_data.md）',
-                value: defaultFileName,
-                placeHolder: '例: docs/data_merged.md'
-            });
+            // ワークスペースルートを取得
+            let workspaceRoot = '';
+            if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
+            }
             
-            if (!fileName) {
+            // 出力パスの処理
+            let defaultOutputPath = outputPath;
+            if (!path.isAbsolute(outputPath) && outputPath.startsWith('./')) {
+                defaultOutputPath = path.join(workspaceRoot, outputPath.substring(2));
+            } else if (!path.isAbsolute(outputPath)) {
+                defaultOutputPath = path.join(workspaceRoot, outputPath);
+            }
+            
+            // 出力先フォルダが存在しない場合は作成
+            if (!fs.existsSync(defaultOutputPath)) {
+                fs.mkdirSync(defaultOutputPath, { recursive: true });
+            }
+            
+            // ファイル選択ダイアログオプションを設定
+            const options: vscode.SaveDialogOptions = {
+                defaultUri: vscode.Uri.file(path.join(defaultOutputPath, defaultFileName)),
+                filters: {
+                    'Markdown': ['md'],
+                    'すべてのファイル': ['*']
+                }
+            };
+            
+            // ファイル保存ダイアログを表示
+            const uri = await vscode.window.showSaveDialog(options);
+            
+            if (!uri) {
                 // ユーザーがキャンセルした場合
                 return;
             }
             
-            // 拡張子がない場合は.mdを追加
-            if (!path.extname(fileName)) {
-                fileName += '.md';
-            }
+            // 選択されたパスを使用
+            fileName = uri.fsPath;
         }
 
         // ワークスペースルートを取得
@@ -44,40 +67,14 @@ export class MergeManager {
         }
 
         // 出力パスの処理
-        let outputFilePath: string;
+        let outputFilePath = fileName; // 直接選択されたパスを使用
         
-        // ファイル名に相対パスが含まれている場合
-        if (fileName.includes('/') || fileName.includes('\\')) {
-            // 相対パスをフルパスに変換
-            if (path.isAbsolute(fileName)) {
-                // 絶対パスの場合はそのまま使用
-                outputFilePath = fileName;
-            } else {
-                // 相対パスの場合はワークスペースルートからの相対パスとして扱う
-                outputFilePath = path.join(workspaceRoot, fileName);
-            }
-            
-            // ディレクトリが存在しない場合は作成
-            const dirPath = path.dirname(outputFilePath);
-            if (!fs.existsSync(dirPath)) {
-                fs.mkdirSync(dirPath, { recursive: true });
-            }
-        } else {
-            // 相対パスの場合はワークスペースからの相対パスに変換
-            let absoluteOutputPath = outputPath;
-            if (!path.isAbsolute(outputPath) && outputPath.startsWith('./')) {
-                absoluteOutputPath = path.join(workspaceRoot, outputPath.substring(2));
-            }
-
-            // 出力先フォルダがなければ作成
-            if (!fs.existsSync(absoluteOutputPath)) {
-                fs.mkdirSync(absoluteOutputPath, { recursive: true });
-            }
-            
-            // 出力パスとファイル名を結合
-            outputFilePath = path.join(absoluteOutputPath, fileName);
+        // ディレクトリが存在しない場合は作成
+        const dirPath = path.dirname(outputFilePath);
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
         }
-
+        
         // AIが理解しやすいフォーマットに整形
         const mergedContent: string[] = [];
         const queue = this.queueManager.getQueue();
@@ -168,6 +165,92 @@ export class MergeManager {
                                 }
                             } catch (error) {
                                 console.error(`見出し抽出中にエラーが発生しました: ${filePath}`, error);
+                            }
+                        }
+                        // JSONやYAML、コードファイルからも構造を抽出して目次に含める
+                        else if (fs.statSync(filePath).isFile()) {
+                            try {
+                                const fileContent = fs.readFileSync(filePath, 'utf8');
+                                const ext = path.extname(filePath).substring(1).toLowerCase();
+                                
+                                // 言語IDを取得
+                                const langMap: {[key: string]: string} = {
+                                    'js': 'javascript',
+                                    'ts': 'typescript',
+                                    'py': 'python',
+                                    'java': 'java',
+                                    'c': 'c',
+                                    'cpp': 'cpp',
+                                    'cs': 'csharp',
+                                    'go': 'go',
+                                    'rs': 'rust',
+                                    'rb': 'ruby',
+                                    'php': 'php',
+                                    'html': 'html',
+                                    'css': 'css',
+                                    'json': 'json',
+                                    'yaml': 'yaml',
+                                    'yml': 'yaml',
+                                    'sql': 'sql',
+                                    'sh': 'bash',
+                                    'bat': 'batch',
+                                    'ps1': 'powershell',
+                                    'xml': 'xml',
+                                    'txt': 'text'
+                                };
+                                
+                                const language = langMap[ext] || '';
+                                
+                                // 特定の言語のファイルのみ構造を抽出
+                                const isStructuredFile = 
+                                    language === 'javascript' || 
+                                    language === 'typescript' || 
+                                    language === 'python' ||
+                                    language === 'scala' ||
+                                    language === 'json' ||
+                                    language === 'yaml';
+                                
+                                if (isStructuredFile) {
+                                    // ファイル構造を抽出
+                                    const codeStructure = this.extractCodeStructure(fileContent, language);
+                                    
+                                    // 「ファイル構造」見出しを追加
+                                    tocEntry.headings.push({
+                                        level: 1,
+                                        text: 'ファイル構造',
+                                        id: `${fileId}-file-structure`
+                                    });
+                                    
+                                    // 抽出した各要素を見出しとして追加
+                                    for (const item of codeStructure) {
+                                        // この項目をIDとして使用するための文字列を生成
+                                        const itemId = item.name.toLowerCase()
+                                            .replace(/\s+/g, '-')
+                                            .replace(/[^\w-]/g, '')
+                                            .replace(/^-+|-+$/g, '');
+                                        
+                                        // ネストレベルに基づいて階層を設定（level 0は2に、level 1は3に変換など）
+                                        const headingLevel = Math.min(item.level + 2, 3); // 最大3までに制限
+                                        
+                                        tocEntry.headings.push({
+                                            level: headingLevel,
+                                            text: `${this.getTypeIcon(item.type)} ${item.name}${item.params || ''}`,
+                                            id: `${fileId}-${itemId}`
+                                        });
+                                        
+                                        // 目次は最大10項目までに制限（大きなファイルでの過剰な目次を防ぐ）
+                                        if (tocEntry.headings.length > 10) {
+                                            tocEntry.headings.push({
+                                                level: 2,
+                                                text: '... その他の項目',
+                                                id: `${fileId}-more-items`
+                                            });
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`ファイル構造抽出中にエラーが発生しました: ${filePath}`, error);
                             }
                         }
                         
@@ -367,13 +450,56 @@ export class MergeManager {
                                     // 最後に空行を追加
                                     mergedContent.push('');
                                 } else {
-                                    // 通常のファイルはコード形式で出力
-                                    mergedContent.push("```" + (language ? language : ''));
-                                    mergedContent.push(fileContent);
-                                    if (!fileContent.endsWith('\n')) {
-                                        mergedContent.push("");
+                                    // コード構造を解析して見出しとして表示（JS/TS/Python/Scala/JSON/YAML）
+                                    const isStructuredCodeFile = 
+                                        language === 'javascript' || 
+                                        language === 'typescript' || 
+                                        language === 'python' ||
+                                        language === 'scala' ||
+                                        language === 'json' ||
+                                        language === 'yaml';
+                                    
+                                    // 構造が検出されるファイルの場合は見出しを配置
+                                    // (目次には既に構造が含まれているので、ここではファイル内リンク用のアンカーだけを配置)
+                                    if (isStructuredCodeFile) {
+                                        const codeStructure = this.extractCodeStructure(fileContent, language);
+                                        
+                                        if (codeStructure.length > 0) {
+                                            // ファイル構造のアンカーポイントのみ追加（見えない形で）
+                                            mergedContent.push(`<a id="${fileId}-file-structure"></a>`);
+                                            
+                                            // 個々の項目のアンカーも追加（見えない形で）
+                                            for (const item of codeStructure) {
+                                                const itemId = item.name.toLowerCase()
+                                                    .replace(/\s+/g, '-')
+                                                    .replace(/[^\w-]/g, '')
+                                                    .replace(/^-+|-+$/g, '');
+                                                mergedContent.push(`<a id="${fileId}-${itemId}"></a>`);
+                                            }
+                                            mergedContent.push('');
+                                            
+                                            // 表示前にファイル構造の参照情報を追加
+                                            mergedContent.push(`> 📝 このファイルの構造は目次セクションに表示されています`);
+                                            mergedContent.push('');
+                                        }
                                     }
-                                    mergedContent.push("```\n");
+                                    
+                                    // JSONとYAMLファイルの場合は構造のみ表示し、コード全体は表示しない
+                                    const isDataFile = language === 'json' || language === 'yaml';
+                                    
+                                    if (isDataFile) {
+                                        // データファイルは構造のみ表示し、コード全体は表示しない
+                                        mergedContent.push(`> 注: 構造が抽出されたため、ファイル全体のコードは表示されていません。`);
+                                        mergedContent.push(``);
+                                    } else {
+                                        // 通常のファイルはコード形式で出力（サイズに関わらず全て表示）
+                                        mergedContent.push("```" + (language ? language : ''));
+                                        mergedContent.push(fileContent);
+                                        if (!fileContent.endsWith('\n')) {
+                                            mergedContent.push("");
+                                        }
+                                        mergedContent.push("```\n");
+                                    }
                                 }
                             } catch (error) {
                                 mergedContent.push(`### ${fileName}`);
@@ -512,6 +638,627 @@ export class MergeManager {
         } catch (error) {
             vscode.window.showErrorMessage(`マージリストファイルの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
             return [];
+        }
+    }
+
+    // コードファイルから構造（クラス、メソッド、フィールドなど）を抽出
+    private extractCodeStructure(content: string, language: string): Array<{name: string, type: string, level: number, params?: string, info?: string}> {
+        const result: Array<{name: string, type: string, level: number, params?: string, info?: string}> = [];
+        
+        // JSON/YAMLファイルの構造を解析
+        if (language === 'json' || language === 'yaml') {
+            try {
+                // JSONまたはYAMLをパース
+                let parsedData;
+                if (language === 'json') {
+                    parsedData = JSON.parse(content);
+                } else {
+                    // YAMLのパースにはJSON.parseを使用できないため、簡易的な処理で代用
+                    // 実際のYAMLパースには外部ライブラリ（js-yaml）などを使用するのが理想的
+                    parsedData = this.parseYaml(content);
+                }
+                
+                // ルートオブジェクトの処理
+                if (parsedData && typeof parsedData === 'object') {
+                    // 配列の場合
+                    if (Array.isArray(parsedData)) {
+                        result.push({ 
+                            name: 'root', 
+                            type: 'array', 
+                            level: 0,
+                            info: `(Array: ${parsedData.length} items)` 
+                        });
+                        
+                        // 配列の最初の数アイテムをサンプルとして表示（最大5つまで）
+                        const maxItems = Math.min(parsedData.length, 5);
+                        for (let i = 0; i < maxItems; i++) {
+                            const item = parsedData[i];
+                            const itemType = this.getDataType(item);
+                            
+                            if (typeof item === 'object' && item !== null) {
+                                result.push({ 
+                                    name: `[${i}]`, 
+                                    type: itemType, 
+                                    level: 1
+                                });
+                                
+                                // オブジェクトの場合は内部構造を表示
+                                if (!Array.isArray(item)) {
+                                    this.extractObjectStructure(item, result, 2);
+                                }
+                            } else {
+                                result.push({ 
+                                    name: `[${i}]`, 
+                                    type: itemType, 
+                                    level: 1,
+                                    info: this.getValuePreview(item)
+                                });
+                            }
+                        }
+                        
+                        // 表示されないアイテムがある場合
+                        if (parsedData.length > maxItems) {
+                            result.push({ 
+                                name: `... ${parsedData.length - maxItems} more items`, 
+                                type: 'ellipsis', 
+                                level: 1 
+                            });
+                        }
+                    } 
+                    // オブジェクトの場合
+                    else {
+                        result.push({ 
+                            name: 'root', 
+                            type: 'object', 
+                            level: 0,
+                            info: `(Object: ${Object.keys(parsedData).length} keys)` 
+                        });
+                        
+                        // オブジェクトの内部構造を第二階層まで表示
+                        this.extractObjectStructure(parsedData, result, 1);
+                    }
+                } else {
+                    // プリミティブ値の場合（まれ）
+                    result.push({ 
+                        name: 'value', 
+                        type: this.getDataType(parsedData), 
+                        level: 0,
+                        info: this.getValuePreview(parsedData)
+                    });
+                }
+            } catch (error) {
+                // パースエラーの場合
+                result.push({ 
+                    name: 'Error', 
+                    type: 'error', 
+                    level: 0,
+                    info: `Parse error: ${error instanceof Error ? error.message : String(error)}`
+                });
+            }
+            
+            return result;
+        }
+        
+        // 他のプログラミング言語の処理（既存のコード）
+        const lines = content.split('\n');
+        
+        // 言語に応じたパターンを定義
+        if (language === 'javascript' || language === 'typescript') {
+            // クラス定義
+            const classPattern = /^(?:export\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+[\w\s.]+)?(?:\s+implements\s+(?:[\w\s.]+(?:,\s*[\w\s.]+)*))?/;
+            // インターフェース定義
+            const interfacePattern = /^(?:export\s+)?interface\s+(\w+)(?:\s+extends\s+[\w\s.]+(?:,\s*[\w\s.]+)*)?/;
+            // メソッド定義（クラス内のメソッドのみ抽出）
+            const methodPattern = /^\s*(?:public|private|protected|async|static|\*)\s+(?!if|for|while|switch)(\w+)\s*(?:<.*?>)?\s*\((.*?)\)/;
+            // 重要なクラスフィールド（publicまたはstaticのみ）
+            const fieldPattern = /^\s*(?:public|protected|readonly|static)\s+(\w+)(?:\:\s*[\w<>[\],\s|]+)?(?:\s*=\s*.*)?;/;
+            // 関数定義（クラス外）
+            const functionPattern = /^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*(?:<.*?>)?\s*\((.*?)\)/;
+            // 名前付きエクスポート（const obj = { 形式の名前付きオブジェクト）
+            const namedExportPattern = /^(?:export\s+)?const\s+(\w+)\s*(?::\s*[\w<>[\],\s|]+)?\s*=\s*(?:[{]|new\s+)/;
+            // Reactコンポーネント（関数形式）
+            const reactFuncPattern = /^(?:export\s+)?const\s+(\w+)(?:\s*:\s*React\.FC(?:<.*?>)?|\s*=\s*React\.memo)?\s*=\s*(?:\(.*?\)|.*?)\s*=>\s*[({]/;
+            // 列挙型
+            const enumPattern = /^(?:export\s+)?(?:const\s+)?enum\s+(\w+)/;
+            // 型エイリアス
+            const typeAliasPattern = /^(?:export\s+)?type\s+(\w+)(?:<.*?>)?\s*=/;
+            
+            let currentClass: string | null = null;
+            let currentInterface: string | null = null;
+            let braceLevel = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // コメント行はスキップ
+                if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) {
+                    continue;
+                }
+                
+                // 波括弧のレベルを追跡
+                braceLevel += (line.match(/{/g) || []).length;
+                braceLevel -= (line.match(/}/g) || []).length;
+                
+                // クラス定義
+                const classMatch = line.match(classPattern);
+                if (classMatch) {
+                    currentClass = classMatch[1];
+                    result.push({ name: currentClass, type: 'class', level: 0 });
+                    continue;
+                }
+                
+                // インターフェース定義
+                const interfaceMatch = line.match(interfacePattern);
+                if (interfaceMatch) {
+                    currentInterface = interfaceMatch[1];
+                    result.push({ name: interfaceMatch[1], type: 'interface', level: 0 });
+                    continue;
+                }
+                
+                // 型エイリアス
+                const typeMatch = line.match(typeAliasPattern);
+                if (typeMatch) {
+                    result.push({ name: typeMatch[1], type: 'type', level: 0 });
+                    continue;
+                }
+                
+                // 列挙型
+                const enumMatch = line.match(enumPattern);
+                if (enumMatch) {
+                    result.push({ name: enumMatch[1], type: 'enum', level: 0 });
+                    continue;
+                }
+                
+                // Reactコンポーネント（関数形式）
+                const reactMatch = line.match(reactFuncPattern);
+                if (reactMatch) {
+                    result.push({ name: reactMatch[1], type: 'component', level: 0 });
+                    continue;
+                }
+                
+                // 関数定義（クラス外）
+                const funcMatch = line.match(functionPattern);
+                if (funcMatch && !currentClass && !currentInterface) {
+                    result.push({ 
+                        name: funcMatch[1], 
+                        type: 'function', 
+                        level: 0,
+                        params: `(${funcMatch[2].trim()})` 
+                    });
+                    continue;
+                }
+                
+                // 名前付きエクスポート
+                const exportMatch = line.match(namedExportPattern);
+                if (exportMatch && !currentClass && !currentInterface) {
+                    // オブジェクトが続く場合のみ追加（変数代入を避ける）
+                    result.push({ name: exportMatch[1], type: 'object', level: 0 });
+                    continue;
+                }
+                
+                // クラス内メソッド
+                if (currentClass) {
+                    const methodMatch = line.match(methodPattern);
+                    if (methodMatch && !line.includes('function(')) {
+                        const methodName = methodMatch[1];
+                        // if, for, switchなどの制御構文を除外
+                        if (!/^(if|for|while|switch|catch)$/.test(methodName)) {
+                            result.push({ 
+                                name: methodName, 
+                                type: 'method', 
+                                level: 1,
+                                params: `(${methodMatch[2].trim()})` 
+                            });
+                        }
+                        continue;
+                    }
+                    
+                    // 重要なクラスフィールド（public, staticなど）
+                    const fieldMatch = line.match(fieldPattern);
+                    if (fieldMatch) {
+                        // stateやpropsなどの重要なフィールドのみを含める
+                        const fieldName = fieldMatch[1];
+                        const isImportantField = 
+                            line.includes('public') || 
+                            line.includes('static') || 
+                            /^(props|state|options|config)$/.test(fieldName);
+                            
+                        if (isImportantField) {
+                            result.push({ name: fieldName, type: 'field', level: 1 });
+                        }
+                        continue;
+                    }
+                }
+                
+                // インターフェースメソッド
+                if (currentInterface) {
+                    // インターフェースメソッド宣言
+                    const interfaceMethodPattern = /^\s*(\w+)\s*(?:\?\s*)?:\s*(?:.*?)\((.*?)\)/;
+                    const interfaceMethodMatch = line.match(interfaceMethodPattern);
+                    if (interfaceMethodMatch) {
+                        result.push({ 
+                            name: interfaceMethodMatch[1], 
+                            type: 'method', 
+                            level: 1,
+                            params: `(${interfaceMethodMatch[2].trim()})` 
+                        });
+                        continue;
+                    }
+                    
+                    // インターフェースプロパティ（重要なもののみ）
+                    const interfacePropPattern = /^\s*(\w+)\s*(?:\?\s*)?:\s*/;
+                    const propMatch = line.match(interfacePropPattern);
+                    if (propMatch) {
+                        const propName = propMatch[1];
+                        // 重要なプロパティのみをリストアップ
+                        const isImportantProp = 
+                            /^(id|name|type|value|data|config|options)$/.test(propName) ||
+                            propName.endsWith('Id') || 
+                            propName.endsWith('Type');
+                            
+                        if (isImportantProp) {
+                            result.push({ name: propName, type: 'property', level: 1 });
+                        }
+                        continue;
+                    }
+                }
+                
+                // クラスやインターフェースの終了を検出
+                if ((currentClass || currentInterface) && braceLevel === 0) {
+                    currentClass = null;
+                    currentInterface = null;
+                }
+            }
+        } else if (language === 'python') {
+            // Pythonのクラス定義
+            const classPattern = /^class\s+(\w+)(?:\(.*\))?:/;
+            // メソッド定義
+            const methodPattern = /^(?:\s+)def\s+(\w+)\s*\((.*)\):/;
+            // 関数定義
+            const functionPattern = /^def\s+(\w+)\s*\((.*)\):/;
+            
+            let currentClass: string | null = null;
+            let currentIndent = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const indent = line.match(/^\s*/)?.[0].length || 0;
+                
+                // インデントが減少したらクラスから出た可能性がある
+                if (currentClass && indent <= currentIndent) {
+                    currentClass = null;
+                }
+                
+                // クラス定義
+                const classMatch = line.match(classPattern);
+                if (classMatch) {
+                    currentClass = classMatch[1];
+                    currentIndent = indent + 4; // Pythonの標準インデントは4スペース
+                    result.push({ name: currentClass, type: 'class', level: 0 });
+                    continue;
+                }
+                
+                // メソッド定義（クラス内）
+                if (currentClass) {
+                    const methodMatch = line.match(methodPattern);
+                    if (methodMatch) {
+                        const methodName = methodMatch[1];
+                        // 内部メソッド（__で始まるもの）を除外するオプション
+                        if (!methodName.startsWith('__') || methodName === '__init__') {
+                            result.push({ 
+                                name: methodName, 
+                                type: 'method', 
+                                level: 1,
+                                params: `(${methodMatch[2].trim()})` 
+                            });
+                        }
+                        continue;
+                    }
+                }
+                
+                // 関数定義（トップレベル）
+                if (!currentClass) {
+                    const funcMatch = line.match(functionPattern);
+                    if (funcMatch) {
+                        const funcName = funcMatch[1];
+                        // 内部関数（__で始まるもの）を除外するオプション
+                        if (!funcName.startsWith('__')) {
+                            result.push({ 
+                                name: funcName, 
+                                type: 'function', 
+                                level: 0,
+                                params: `(${funcMatch[2].trim()})` 
+                            });
+                        }
+                    }
+                }
+            }
+        } else if (language === 'scala') {
+            // Scalaのクラス/オブジェクト定義
+            const classPattern = /^(?:abstract\s+)?(?:case\s+)?class\s+(\w+)(?:\[.*\])?(?:\s*\(.*\))?(?:\s+extends\s+[\w\s.]+)?(?:\s+with\s+[\w\s.]+)*/;
+            const objectPattern = /^object\s+(\w+)(?:\s+extends\s+[\w\s.]+)?(?:\s+with\s+[\w\s.]+)*/;
+            const traitPattern = /^trait\s+(\w+)(?:\s+extends\s+[\w\s.]+)?(?:\s+with\s+[\w\s.]+)*/;
+            
+            // メソッド定義
+            const methodPattern = /^\s*(?:private\s+|protected\s+|override\s+)*def\s+(\w+)(?:\[.*\])?(?:\s*\((.*)\)|\s*=\s*)/;
+            
+            // val/var定義（重要なもののみ抽出）
+            const valPattern = /^\s*(?:private\s+|protected\s+|override\s+)*(?:val|var)\s+(\w+)(?:\s*:.*)?(?:\s*=.*)?/;
+            
+            let currentClass: string | null = null;
+            let braceLevel = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // コメント行はスキップ
+                if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) {
+                    continue;
+                }
+                
+                // 波括弧のレベルを追跡
+                braceLevel += (line.match(/{/g) || []).length;
+                braceLevel -= (line.match(/}/g) || []).length;
+                
+                // クラス定義
+                const classMatch = line.match(classPattern);
+                if (classMatch) {
+                    currentClass = classMatch[1];
+                    result.push({ name: currentClass, type: 'class', level: 0 });
+                    continue;
+                }
+                
+                // オブジェクト定義
+                const objectMatch = line.match(objectPattern);
+                if (objectMatch) {
+                    currentClass = objectMatch[1];
+                    result.push({ name: currentClass, type: 'object', level: 0 });
+                    continue;
+                }
+                
+                // trait定義
+                const traitMatch = line.match(traitPattern);
+                if (traitMatch) {
+                    currentClass = traitMatch[1];
+                    result.push({ name: currentClass, type: 'trait', level: 0 });
+                    continue;
+                }
+                
+                // メソッド
+                const methodMatch = line.match(methodPattern);
+                if (methodMatch && !line.endsWith(";")) {
+                    const methodName = methodMatch[1];
+                    // 一般的なScalaメソッド名パターンで除外するもの
+                    if (!/^apply$|^unapply$/.test(methodName) && !methodName.startsWith('_')) {
+                        const level = currentClass ? 1 : 0;
+                        const params = methodMatch[2] ? `(${methodMatch[2].trim()})` : '';
+                        result.push({ 
+                            name: methodName, 
+                            type: 'method', 
+                            level: level,
+                            params: params 
+                        });
+                    }
+                    continue;
+                }
+                
+                // 重要なval/var定義
+                if (currentClass) {
+                    const valMatch = line.match(valPattern);
+                    if (valMatch && !line.startsWith("//")) {
+                        const valName = valMatch[1];
+                        // パブリックなもののみフィルタリング
+                        const isPublic = !line.includes('private');
+                        if (isPublic && !valName.startsWith('_')) {
+                            result.push({ name: valName, type: 'field', level: 1 });
+                        }
+                        continue;
+                    }
+                }
+                
+                // クラスやオブジェクトの終了を検出
+                if (currentClass && braceLevel === 0) {
+                    currentClass = null;
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    // YAMLを簡易的にパースする関数（完全なYAMLパーサーではない）
+    private parseYaml(content: string): any {
+        const lines = content.split('\n');
+        const result: any = {};
+        let currentKey = '';
+        let indentLevel = 0;
+        let currentObject = result;
+        const stack: any[] = [result];
+        
+        for (const line of lines) {
+            // コメント行やブランク行はスキップ
+            if (line.trim().startsWith('#') || line.trim() === '') continue;
+            
+            // インデントレベルを取得
+            const lineIndent = line.match(/^\s*/)?.[0].length || 0;
+            
+            // キーと値の分離（最初の:で分割）
+            const match = line.trim().match(/^(.+?):\s*(.*)$/);
+            if (match) {
+                const key = match[1].trim();
+                const value = match[2].trim();
+                
+                // インデントが下がった場合、スタックを調整
+                if (lineIndent < indentLevel) {
+                    const levels = Math.floor((indentLevel - lineIndent) / 2);
+                    for (let i = 0; i < levels; i++) {
+                        stack.pop();
+                    }
+                    currentObject = stack[stack.length - 1];
+                } 
+                // インデントが上がった場合、新しいオブジェクトを作成
+                else if (lineIndent > indentLevel) {
+                    if (!currentObject[currentKey]) {
+                        currentObject[currentKey] = {};
+                    }
+                    currentObject = currentObject[currentKey];
+                    stack.push(currentObject);
+                }
+                
+                indentLevel = lineIndent;
+                currentKey = key;
+                
+                // 値が空でない場合は処理
+                if (value) {
+                    // 配列表記 [item1, item2] を処理
+                    if (value.startsWith('[') && value.endsWith(']')) {
+                        try {
+                            currentObject[key] = JSON.parse(value.replace(/'/g, '"'));
+                        } catch (e) {
+                            currentObject[key] = value;
+                        }
+                    } 
+                    // 数値の場合
+                    else if (!isNaN(Number(value))) {
+                        currentObject[key] = Number(value);
+                    }
+                    // 真偽値の場合
+                    else if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+                        currentObject[key] = value.toLowerCase() === 'true';
+                    }
+                    // その他の文字列
+                    else {
+                        // クォートを削除
+                        if ((value.startsWith('"') && value.endsWith('"')) || 
+                            (value.startsWith("'") && value.endsWith("'"))) {
+                            currentObject[key] = value.substring(1, value.length - 1);
+                        } else {
+                            currentObject[key] = value;
+                        }
+                    }
+                } else {
+                    // 値が空の場合は空オブジェクトとして初期化
+                    currentObject[key] = {};
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    // オブジェクトの構造を再帰的に抽出（レベルを指定）
+    private extractObjectStructure(obj: any, result: Array<{name: string, type: string, level: number, params?: string, info?: string}>, level: number, maxLevel: number = 2): void {
+        // 第二階層まで（maxLevel=2）
+        if (level > maxLevel) return;
+        
+        for (const key of Object.keys(obj)) {
+            const value = obj[key];
+            const valueType = this.getDataType(value);
+            
+            if (typeof value === 'object' && value !== null) {
+                if (Array.isArray(value)) {
+                    // 配列の場合
+                    result.push({ 
+                        name: key, 
+                        type: 'array', 
+                        level: level,
+                        info: `(Array: ${value.length} items)` 
+                    });
+                    
+                    // 配列の要素は特別な場合のみ処理（内容が重要な小さい配列など）
+                    if (value.length > 0 && value.length <= 3 && level < maxLevel) {
+                        for (let i = 0; i < value.length; i++) {
+                            const item = value[i];
+                            if (typeof item === 'object' && item !== null) {
+                                result.push({ 
+                                    name: `${key}[${i}]`, 
+                                    type: this.getDataType(item), 
+                                    level: level + 1 
+                                });
+                            } else {
+                                result.push({ 
+                                    name: `${key}[${i}]`, 
+                                    type: this.getDataType(item), 
+                                    level: level + 1,
+                                    info: this.getValuePreview(item)
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    // オブジェクトの場合
+                    result.push({ 
+                        name: key, 
+                        type: 'object', 
+                        level: level,
+                        info: `(Object: ${Object.keys(value).length} keys)` 
+                    });
+                    
+                    // 次の階層を処理
+                    this.extractObjectStructure(value, result, level + 1, maxLevel);
+                }
+            } else {
+                // プリミティブ値
+                result.push({ 
+                    name: key, 
+                    type: valueType, 
+                    level: level,
+                    info: this.getValuePreview(value)
+                });
+            }
+        }
+    }
+    
+    // データ型を判定して返す
+    private getDataType(value: any): string {
+        if (value === null) return 'null';
+        if (Array.isArray(value)) return 'array';
+        if (typeof value === 'object') return 'object';
+        return typeof value;
+    }
+    
+    // 値のプレビューを生成（文字列表現）
+    private getValuePreview(value: any): string {
+        if (value === null) return '(null)';
+        if (value === undefined) return '(undefined)';
+        
+        if (typeof value === 'string') {
+            // 長い文字列は切り詰める
+            if (value.length > 30) {
+                return `"${value.substring(0, 27)}..."`;
+            }
+            return `"${value}"`;
+        }
+        
+        if (typeof value === 'number' || typeof value === 'boolean') {
+            return `(${value})`;
+        }
+        
+        return '';
+    }
+    
+    // コード要素の種類に応じたアイコンを返す
+    private getTypeIcon(type: string): string {
+        switch (type) {
+            case 'class': return '🔷';
+            case 'interface': return '🔶';
+            case 'type': return '📄';
+            case 'enum': return '🔢';
+            case 'component': return '⚛️';
+            case 'method': return '🔹';
+            case 'function': return '🔸';
+            case 'field': return '📎';
+            case 'property': return '🔗';
+            case 'object': return '📦';
+            case 'array': return '📚';
+            case 'trait': return '🔶';
+            case 'string': return '📝';
+            case 'number': return '🔢';
+            case 'boolean': return '⚖️';
+            case 'null': return '⭕';
+            case 'error': return '❌';
+            case 'ellipsis': return '…';
+            default: return '��';
         }
     }
 }
