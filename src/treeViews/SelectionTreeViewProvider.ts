@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import { QueueManager } from '../components/QueueManager';
 
 export class SelectionTreeViewProvider implements vscode.TreeDataProvider<SelectionTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<SelectionTreeItem | undefined | void> = new vscode.EventEmitter<SelectionTreeItem | undefined | void>();
-	readonly onDidChangeTreeData: vscode.Event<SelectionTreeItem | undefined | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData: vscode.EventEmitter<SelectionTreeItem | null> = new vscode.EventEmitter<SelectionTreeItem | null>();
+    readonly onDidChangeTreeData: vscode.Event<SelectionTreeItem | null> = this._onDidChangeTreeData.event;
+    
 
     constructor(private queueManager: QueueManager) {}
 

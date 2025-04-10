@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import { HistoryManager, MergeHistoryItem } from '../components/HistoryManager';
 
 export class HistoryTreeViewProvider implements vscode.TreeDataProvider<HistoryTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<HistoryTreeItem | undefined | void> = new vscode.EventEmitter<HistoryTreeItem | undefined | void>();
-	readonly onDidChangeTreeData: vscode.Event<HistoryTreeItem | undefined | void> = this._onDidChangeTreeData.event;
-
+    private _onDidChangeTreeData: vscode.EventEmitter<HistoryTreeItem | null> = new vscode.EventEmitter<HistoryTreeItem | null>();
+    readonly onDidChangeTreeData: vscode.Event<HistoryTreeItem | null> = this._onDidChangeTreeData.event;
+    
     constructor(private historyManager: HistoryManager) {}
 
     refresh(): void {
