@@ -27,7 +27,11 @@ logs/*.log
 Thumbs.db
 
 # IDEs and editors
-.vscode/
+# .vscodeフォルダを基本的に除外
+.vscode/*
+
+# ただし launch.json は含める
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo
