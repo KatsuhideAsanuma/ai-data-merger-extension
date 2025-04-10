@@ -13,7 +13,8 @@
       "onCommand:extension.addFileToQueue",
       "onCommand:extension.clearQueue",
       "onCommand:extension.generateMergedFile",
-      "onCommand:extension.reexecuteMerge"
+      "onCommand:extension.reexecuteMerge",
+      "onCommand:extension.changeFileCategory"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -33,6 +34,10 @@
         {
           "command": "extension.reexecuteMerge",
           "title": "Re-Execute Merge from History"
+        },
+        {
+          "command": "extension.changeFileCategory",
+          "title": "Change File Category"
         }
       ],
       "viewsContainers": {
@@ -61,7 +66,7 @@
           {
             "command": "extension.addFileToQueue",
             "title": "$(add) Add to File Merge Queue",
-            "when": "explorerResourceIsFolder || resourceLangId == markdown", 
+            "when": "explorerResourceIsFolder || resourceLangId == markdown || resourceLangId == plaintext || resourceLangId == javascript || resourceLangId == typescript || resourceLangId == json || resourceLangId == yaml || resourceLangId == python || resourceLangId == java || resourceLangId == cpp || resourceLangId == c || resourceLangId == csharp || resourceLangId == go || resourceLangId == rust || resourceLangId == ruby || resourceLangId == php || resourceLangId == html || resourceLangId == css || resourceLangId == xml || resourceLangId == bat || resourceLangId == shellscript || resourceLangId == sql || resourceLangId == scala || resourceLangId == kotlin || resourceLangId == swift || resourceLangId == dart || resourceLangId == groovy || resourceLangId == r || resourceLangId == powershell || resourceLangId == perl || resourceLangId == lua || resourceLangId == clojure || resourceLangId == fsharp || resourceLangId == coffeescript", 
             "group": "navigation"
           }
         ],
@@ -78,6 +83,13 @@
             "when": "view == selectionTreeView",
             "group": "navigation"
           }
+        ],
+        "view/item/context": [
+          {
+            "command": "extension.changeFileCategory",
+            "when": "view == selectionTreeView && viewItem == file",
+            "group": "inline"
+          }
         ]
       },
       "configuration": {
@@ -93,6 +105,45 @@
             "type": "string",
             "default": "merged_data.md",
             "description": "マージファイルのデフォルトファイル名"
+          },
+          "aiDataMerger.allowedFileTypes": {
+            "type": "array",
+            "default": [
+              "markdown",
+              "plaintext",
+              "json",
+              "yaml",
+              "javascript",
+              "typescript",
+              "python",
+              "java",
+              "cpp",
+              "c",
+              "csharp",
+              "go",
+              "rust",
+              "ruby",
+              "php",
+              "html",
+              "css",
+              "xml",
+              "shellscript",
+              "bat",
+              "sql",
+              "scala",
+              "kotlin",
+              "swift",
+              "dart",
+              "groovy",
+              "r",
+              "powershell",
+              "perl",
+              "lua",
+              "clojure",
+              "fsharp",
+              "coffeescript"
+            ],
+            "description": "マージキューに追加可能なファイルタイプ（VSCodeの言語識別子）"
           }
         }
       }
