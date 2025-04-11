@@ -380,18 +380,6 @@ export class MergeManager {
                                     // マークダウンファイルの場合、見出し階層を調整する
                                     const mdLines = fileContent.split('\n');
                                     
-                                    // 最初の見出しレベルを検出して基準レベルとする
-                                    let baseHeadingLevel = 0;
-                                    for (const line of mdLines) {
-                                        if (line.trim().startsWith('#')) {
-                                            const match = line.match(/^(#+)\s+/);
-                                            if (match) {
-                                                baseHeadingLevel = match[1].length;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    
                                     // マークダウンコンテンツをインラインで追加（見出しレベルを調整）
                                     for (const line of mdLines) {
                                         // 見出し行（#で始まる行）の処理
@@ -411,34 +399,18 @@ export class MergeManager {
                                                 // IDタグを追加した見出し
                                                 const uniqueId = `${fileId}-${headingId}`;
                                                 
-                                                // マージファイル内では既に ### レベルでファイル名を出力しているため、
-                                                // ファイル内の見出しは必ず調整する必要がある
-                                                // 計算された新しいレベル（基準レベルからの相対位置 + 3 + 1）
-                                                let calculatedLevel;
-                                                
-                                                if (baseHeadingLevel > 0) {
-                                                    // 基準レベルからの相対位置を計算
-                                                    const relativeLevel = currentLevel - baseHeadingLevel;
-                                                    // 基本は3 + relativeLevel + 1
-                                                    calculatedLevel = 3 + relativeLevel + 1;
+                                                // 単純に###を追加し、結果が7以上になる場合は空白インデントに置き換える
+                                                const newLevel = currentLevel + 3;
+                                                if (newLevel <= 6) {
+                                                    // 6以下の場合は単純に#を使う
+                                                    const newHeading = '#'.repeat(newLevel) + ' ' + headingText + ` <a id="${uniqueId}"></a>`;
+                                                    mergedContent.push(newHeading);
                                                 } else {
-                                                    // 基準レベルが検出できなかった場合は単純に3プラス
-                                                    calculatedLevel = currentLevel + 3;
+                                                    // 7以上の場合は#を6個にして、残りを空白インデントで表現
+                                                    const extraIndent = '  '.repeat(newLevel - 6);
+                                                    const newHeading = extraIndent + '#'.repeat(6) + ' ' + headingText + ` <a id="${uniqueId}"></a>`;
+                                                    mergedContent.push(newHeading);
                                                 }
-                                                
-                                                // 実際のマークダウン見出しレベル（最大6まで）
-                                                const actualHeadingLevel = Math.min(calculatedLevel, 6);
-                                                
-                                                // 擬似階層インデント（レベル6を超える場合）
-                                                let indentSpaces = '';
-                                                if (calculatedLevel > 6) {
-                                                    // 余分なレベル数×2の空白を先頭に追加
-                                                    indentSpaces = ' '.repeat((calculatedLevel - 6) * 2);
-                                                }
-                                                
-                                                // 新しい見出しを作成
-                                                const newHeading = indentSpaces + '#'.repeat(actualHeadingLevel) + ' ' + headingText + ` <a id="${uniqueId}"></a>`;
-                                                mergedContent.push(newHeading);
                                             } else {
                                                 mergedContent.push(line);
                                             }
