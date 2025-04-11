@@ -1,7 +1,7 @@
 {
     "name": "ai-data-merger-extension",
-    "displayName": "AI Data Merger Extension",
-    "description": "ファイルをマージしてAI参照データを生成する拡張機能",
+    "displayName": "%extension.displayName%",
+    "description": "%extension.description%",
     "version": "0.1.0",
     "engines": {
       "vscode": "^1.60.0"
@@ -41,147 +41,147 @@
       "commands": [
         {
           "command": "extension.addFileToQueue",
-          "title": "Add File to Merge Queue",
+          "title": "%commands.addFileToQueue.title%",
           "icon": "$(add)"
         },
         {
           "command": "extension.clearQueue",
-          "title": "Clear Merge Queue",
+          "title": "%commands.clearQueue.title%",
           "icon": "$(trash)"
         },
         {
           "command": "extension.generateMergedFile",
-          "title": "Generate Merged File",
+          "title": "%commands.generateMergedFile.title%",
           "icon": "$(merge)"
         },
         {
           "command": "extension.reexecuteMerge",
-          "title": "Re-Execute Merge from History",
+          "title": "%commands.reexecuteMerge.title%",
           "icon": "$(history)"
         },
         {
           "command": "extension.changeFileCategory",
-          "title": "Change File Category",
+          "title": "%commands.changeFileCategory.title%",
           "icon": "$(symbol-folder)"
         },
         {
           "command": "extension.removeFileFromQueue",
-          "title": "Remove File from Queue",
+          "title": "%commands.removeFileFromQueue.title%",
           "icon": "$(trash)"
         },
         {
           "command": "extension.moveFileUp",
-          "title": "Move File Up",
+          "title": "%commands.moveFileUp.title%",
           "icon": "$(arrow-up)"
         },
         {
           "command": "extension.moveFileDown",
-          "title": "Move File Down",
+          "title": "%commands.moveFileDown.title%",
           "icon": "$(arrow-down)"
         },
         {
           "command": "extension.loadProjectMergeList",
-          "title": "Load Project Merge List",
+          "title": "%commands.loadProjectMergeList.title%",
           "icon": "$(notebook)"
         },
         {
           "command": "extension.addHistoryToMergeList",
-          "title": "Add to Project Merge Lists",
+          "title": "%commands.addHistoryToMergeList.title%",
           "icon": "$(add)"
         },
         {
           "command": "extension.createPromptTemplate",
-          "title": "Create Prompt Template",
+          "title": "%commands.createPromptTemplate.title%",
           "icon": "$(file-add)"
         },
         {
           "command": "extension.createSimplePrompt",
-          "title": "Create Simple Text Prompt",
+          "title": "%commands.createSimplePrompt.title%",
           "icon": "$(new-file)"
         },
         {
           "command": "extension.generateFromTemplate",
-          "title": "Generate Text Prompt from Template",
+          "title": "%commands.generateFromTemplate.title%",
           "icon": "$(debug-step-over)"
         },
         {
           "command": "extension.editPrompt",
-          "title": "Edit Prompt",
+          "title": "%commands.editPrompt.title%",
           "icon": "$(edit)"
         },
         {
           "command": "extension.previewPrompt",
-          "title": "Preview Prompt",
+          "title": "%commands.previewPrompt.title%",
           "icon": "$(preview)"
         },
         {
           "command": "extension.insertSnippet",
-          "title": "Insert Prompt Snippet",
+          "title": "%commands.insertSnippet.title%",
           "icon": "$(symbol-snippet)"
         },
         {
           "command": "extension.addPromptToQueue",
-          "title": "Add Prompt to Merge Queue",
+          "title": "%commands.addPromptToQueue.title%",
           "icon": "$(add)"
         },
         {
           "command": "extension.insertMergedDataToPrompt",
-          "title": "Insert Merged Data to Prompt",
+          "title": "%commands.insertMergedDataToPrompt.title%",
           "icon": "$(insert)"
         },
         {
           "command": "extension.exportPrompts",
-          "title": "Export Prompts",
+          "title": "%commands.exportPrompts.title%",
           "icon": "$(export)"
         },
         {
           "command": "extension.importPrompts",
-          "title": "Import Prompts",
+          "title": "%commands.importPrompts.title%",
           "icon": "$(import)"
         },
         {
           "command": "extension.createPromptFromFile",
-          "title": "Create Prompt from File",
+          "title": "%commands.createPromptFromFile.title%",
           "icon": "$(file-add)"
         },
         {
           "command": "extension.savePromptAsFile",
-          "title": "Save Prompt as File",
+          "title": "%commands.savePromptAsFile.title%",
           "icon": "$(save-as)"
         },
         {
           "command": "extension.backupPromptsLibrary",
-          "title": "Backup Prompts Library",
+          "title": "%commands.backupPromptsLibrary.title%",
           "icon": "$(archive)"
         },
         {
           "command": "extension.restorePromptsLibrary",
-          "title": "Restore Prompts Library",
+          "title": "%commands.restorePromptsLibrary.title%",
           "icon": "$(unarchive)"
         },
         {
           "command": "ai-data-merger.createTemplate",
-          "title": "テンプレートを作成",
+          "title": "%commands.aiDM.createTemplate.title%",
           "category": "AI Data Merger"
         },
         {
           "command": "ai-data-merger.editTemplate",
-          "title": "テンプレートを編集",
+          "title": "%commands.aiDM.editTemplate.title%",
           "category": "AI Data Merger"
         },
         {
           "command": "ai-data-merger.editTemplateVariables",
-          "title": "テンプレート変数を編集",
+          "title": "%commands.aiDM.editTemplateVariables.title%",
           "category": "AI Data Merger"
         },
         {
           "command": "ai-data-merger.generateFromTemplate",
-          "title": "テンプレートからプロンプト生成",
+          "title": "%commands.aiDM.generateFromTemplate.title%",
           "category": "AI Data Merger"
         },
         {
           "command": "ai-data-merger.deleteTemplate",
-          "title": "テンプレートを削除",
+          "title": "%commands.aiDM.deleteTemplate.title%",
           "category": "AI Data Merger"
         }
       ],
@@ -189,7 +189,7 @@
         "activitybar": [
           {
             "id": "aiDataMerger",
-            "title": "AI Data Merger",
+            "title": "%views.aiDataMerger.title%",
             "icon": "resources/icon_transparent.png"
           }
         ]
@@ -198,15 +198,15 @@
         "aiDataMerger": [
           {
             "id": "selectionTreeView",
-            "name": "Selected Files"
+            "name": "%views.selectionTreeView.title%"
           },
           {
             "id": "historyTreeView",
-            "name": "Merge History"
+            "name": "%views.historyTreeView.title%"
           },
           {
             "id": "promptsTreeView",
-            "name": "Prompts"
+            "name": "%views.promptsTreeView.title%"
           }
         ]
       },
@@ -214,13 +214,13 @@
         "explorer/context": [
           {
             "command": "extension.addFileToQueue",
-            "title": "Add to File Merge Queue",
+            "title": "%commands.addFileToQueue.title%",
             "when": "explorerResourceIsFolder || resourceLangId == markdown || resourceLangId == plaintext || resourceLangId == javascript || resourceLangId == typescript || resourceLangId == json || resourceLangId == yaml || resourceLangId == python || resourceLangId == java || resourceLangId == cpp || resourceLangId == c || resourceLangId == csharp || resourceLangId == go || resourceLangId == rust || resourceLangId == ruby || resourceLangId == php || resourceLangId == html || resourceLangId == css || resourceLangId == xml || resourceLangId == bat || resourceLangId == shellscript || resourceLangId == sql || resourceLangId == scala || resourceLangId == kotlin || resourceLangId == swift || resourceLangId == dart || resourceLangId == groovy || resourceLangId == r || resourceLangId == powershell || resourceLangId == perl || resourceLangId == lua || resourceLangId == clojure || resourceLangId == fsharp || resourceLangId == coffeescript || resourceLangId == jsonc || resourceLangId == ignore || resourceLangId == gitignore", 
             "group": "navigation"
           },
           {
             "command": "extension.createPromptFromFile",
-            "title": "Create Prompt from File",
+            "title": "%commands.createPromptFromFile.title%",
             "when": "resourceLangId == markdown || resourceLangId == plaintext",
             "group": "navigation"
           }
@@ -285,7 +285,7 @@
           },
           {
             "command": "extension.addHistoryToMergeList",
-            "title": "Add to Project Merge Lists",
+            "title": "%commands.addHistoryToMergeList.title%",
             "when": "view == historyTreeView && viewItem == historyItem",
             "group": "inline"
           },
@@ -333,12 +333,12 @@
           "aiDataMerger.outputPath": {
             "type": "string",
             "default": "./merged",
-            "description": "マージ後のファイル出力先フォルダ"
+            "description": "%configuration.outputPath%"
           },
           "aiDataMerger.defaultFileName": {
             "type": "string",
             "default": "merged_data.md",
-            "description": "マージファイルのデフォルトファイル名"
+            "description": "%configuration.defaultFileName%"
           },
           "aiDataMerger.allowedFileTypes": {
             "type": "array",
@@ -377,12 +377,12 @@
               "fsharp",
               "coffeescript"
             ],
-            "description": "マージキューに追加可能なファイルタイプ（VSCodeの言語識別子）"
+            "description": "%configuration.allowedFileTypes%"
           },
           "aiDataMerger.showDataFileContent": {
             "type": "boolean",
             "default": true,
-            "description": "JSONやYAMLなどのデータファイルのコード全体を表示するかどうか。falseの場合は構造のみ表示します。"
+            "description": "%configuration.showDataFileContent%"
           },
           "aiDataMerger.categories": {
             "type": "array",
@@ -391,12 +391,12 @@
               "設計書出力",
               "参照コード出力"
             ],
-            "description": "マージファイル内のカテゴリ一覧。ファイルの分類に使用されます。"
+            "description": "%configuration.categories%"
           },
           "aiDataMerger.promptsStoragePath": {
             "type": "string",
             "default": "./prompts",
-            "description": "プロンプトデータの保存先フォルダ"
+            "description": "%configuration.promptsStoragePath%"
           },
           "aiDataMerger.promptCategories": {
             "type": "array",
@@ -407,12 +407,12 @@
               "デバッグ",
               "一般"
             ],
-            "description": "プロンプトのカテゴリ一覧"
+            "description": "%configuration.promptCategories%"
           },
           "aiDataMerger.maxTokenWarningThreshold": {
             "type": "number",
             "default": 4000,
-            "description": "トークン数警告の閾値"
+            "description": "%configuration.maxTokenWarningThreshold%"
           },
           "aiDataMerger.promptSnippets": {
             "type": "array",
@@ -430,7 +430,7 @@
                 "text": "以下のコードをより効率的にリファクタリングしてください："
               }
             ],
-            "description": "プロンプト作成時に挿入可能な定型句"
+            "description": "%configuration.promptSnippets%"
           }
         }
       }
@@ -452,6 +452,5 @@
       "url": "https://github.com/katsuhideAsanuma/ai-data-merger-extension.git"
     },
     "icon": "resources/icon.png"
-
   }
   
