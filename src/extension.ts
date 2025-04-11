@@ -4,8 +4,10 @@ import * as vscode from 'vscode';
 import { ConfigManager } from './components/ConfigManager';
 import { HistoryManager } from './components/HistoryManager';
 import { MergeManager } from './components/MergeManager';
+import { PromptManager } from './components/PromptManager';
 import { QueueManager } from './components/QueueManager';
 import { HistoryTreeViewProvider } from './treeViews/HistoryTreeViewProvider';
+import { PromptTreeViewProvider } from './treeViews/PromptTreeViewProvider';
 import { SelectionTreeViewProvider } from './treeViews/SelectionTreeViewProvider';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -14,12 +16,15 @@ export function activate(context: vscode.ExtensionContext) {
     const queueManager = new QueueManager();
     const historyManager = new HistoryManager(context);
     const mergeManager = new MergeManager(queueManager, configManager, historyManager);
+    const promptManager = new PromptManager(context);
 
     // ツリービュープロバイダーの登録
     const selectionTreeProvider = new SelectionTreeViewProvider(queueManager);
     const historyTreeProvider = new HistoryTreeViewProvider(historyManager);
+    const promptTreeProvider = new PromptTreeViewProvider(promptManager);
     vscode.window.registerTreeDataProvider('selectionTreeView', selectionTreeProvider);
     vscode.window.registerTreeDataProvider('historyTreeView', historyTreeProvider);
+    vscode.window.registerTreeDataProvider('promptsTreeView', promptTreeProvider);
 
     // ファイルがテキスト形式かどうかをチェックする関数
     const isTextFile = async (filePath: string): Promise<boolean> => {
@@ -222,6 +227,255 @@ export function activate(context: vscode.ExtensionContext) {
         } catch (error) {
             vscode.window.showErrorMessage(`マージリストの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
             console.error('マージリスト読み込みエラー:', error);
+        }
+    }));
+
+    // プロンプトテンプレート作成コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.createPromptTemplate', async () => {
+        try {
+            await promptManager.createTemplatePrompt();
+            promptTreeProvider.refresh();
+        } catch (error) {
+            vscode.window.showErrorMessage(`テンプレート作成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('テンプレート作成エラー:', error);
+        }
+    }));
+
+    // 単純テキストプロンプト作成コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.createSimplePrompt', async () => {
+        try {
+            await promptManager.createSimpleTextPrompt();
+            promptTreeProvider.refresh();
+        } catch (error) {
+            vscode.window.showErrorMessage(`プロンプト作成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('プロンプト作成エラー:', error);
+        }
+    }));
+
+    // テンプレートからテキストプロンプト生成コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.generateFromTemplate', async (item) => {
+        try {
+            if (item && item.promptId) {
+                await promptManager.generateFromTemplate(item.promptId);
+                promptTreeProvider.refresh();
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`テンプレートからの生成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('テンプレート生成エラー:', error);
+        }
+    }));
+
+    // プロンプト編集コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.editPrompt', async (item) => {
+        try {
+            if (item && item.promptId) {
+                await promptManager.editPrompt(item.promptId);
+                promptTreeProvider.refresh();
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`プロンプト編集中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('プロンプト編集エラー:', error);
+        }
+    }));
+
+    // プロンプトプレビューコマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.previewPrompt', async (promptId, type) => {
+        try {
+            const { templates, simpleTexts } = promptManager.getPrompts();
+            let prompt;
+            
+            if (type === 'template') {
+                prompt = templates.find(t => t.id === promptId);
+            } else {
+                prompt = simpleTexts.find(t => t.id === promptId);
+            }
+            
+            if (prompt) {
+                // プレビュー用ドキュメントを作成
+                const document = await vscode.workspace.openTextDocument({
+                    content: prompt.content,
+                    language: 'markdown'
+                });
+                
+                // エディタで開く
+                await vscode.window.showTextDocument(document, { preview: true, viewColumn: vscode.ViewColumn.One });
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`プロンプトプレビュー中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('プロンプトプレビューエラー:', error);
+        }
+    }));
+
+    // プロンプトをマージキューに追加コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.addPromptToQueue', async (item) => {
+        try {
+            if (item && item.promptId) {
+                // プロンプトデータを取得
+                const { simpleTexts } = promptManager.getPrompts();
+                const prompt = simpleTexts.find(t => t.id === item.promptId);
+                
+                if (prompt) {
+                    // カテゴリ選択UIを表示
+                    if (configManager.categories.length > 0) {
+                        const selectedCategory = await vscode.window.showQuickPick(configManager.categories, {
+                            placeHolder: 'プロンプトを追加するカテゴリを選択してください'
+                        });
+
+                        if (selectedCategory) {
+                            // 一時ファイルにプロンプト内容を保存
+                            const tempDir = path.join(context.extensionPath, 'prompt_temp');
+                            if (!fs.existsSync(tempDir)) {
+                                fs.mkdirSync(tempDir, { recursive: true });
+                            }
+                            
+                            const tempFilePath = path.join(tempDir, `${prompt.id}.md`);
+                            fs.writeFileSync(tempFilePath, prompt.content);
+                            
+                            // キューに追加
+                            queueManager.addFile(tempFilePath, selectedCategory);
+                            selectionTreeProvider.refresh();
+                            
+                            vscode.window.showInformationMessage(`プロンプト「${prompt.name}」をマージキューに追加しました`);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`プロンプトの追加中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('プロンプト追加エラー:', error);
+        }
+    }));
+
+    // プロンプトエクスポートコマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.exportPrompts', async () => {
+        try {
+            await promptManager.exportPrompts();
+        } catch (error) {
+            vscode.window.showErrorMessage(`プロンプトのエクスポート中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('プロンプトエクスポートエラー:', error);
+        }
+    }));
+
+    // プロンプトインポートコマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.importPrompts', async () => {
+        try {
+            await promptManager.importPrompts();
+            promptTreeProvider.refresh();
+        } catch (error) {
+            vscode.window.showErrorMessage(`プロンプトのインポート中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('プロンプトインポートエラー:', error);
+        }
+    }));
+
+    // ファイルからプロンプト作成コマンド
+    context.subscriptions.push(vscode.commands.registerCommand('extension.createPromptFromFile', async (uri: vscode.Uri) => {
+        try {
+            if (uri) {
+                // ファイルの内容を読み込み
+                const fileContent = fs.readFileSync(uri.fsPath, 'utf8');
+                
+                // プロンプト名の入力
+                const fileName = path.basename(uri.fsPath);
+                const name = await vscode.window.showInputBox({
+                    prompt: 'プロンプト名を入力してください',
+                    placeHolder: 'プロンプト名',
+                    value: `${fileName}から作成されたプロンプト`
+                });
+                
+                if (!name) {
+                    return; // キャンセル
+                }
+                
+                // カテゴリの選択または入力
+                const categories = vscode.workspace.getConfiguration('aiDataMerger').get('promptCategories', []) as string[];
+                let category = await vscode.window.showQuickPick([
+                    ...categories,
+                    '$(add) 新しいカテゴリを作成...'
+                ], {
+                    placeHolder: 'カテゴリを選択または作成'
+                });
+                
+                if (!category) {
+                    return; // キャンセル
+                }
+                
+                // 新しいカテゴリを作成
+                if (category === '$(add) 新しいカテゴリを作成...') {
+                    category = await vscode.window.showInputBox({
+                        prompt: '新しいカテゴリ名を入力してください',
+                        placeHolder: '例: コード生成'
+                    });
+                    
+                    if (!category) {
+                        return; // キャンセル
+                    }
+                    
+                    // 設定に新しいカテゴリを追加
+                    const updatedCategories = [...categories, category];
+                    await vscode.workspace.getConfiguration('aiDataMerger').update('promptCategories', updatedCategories, vscode.ConfigurationTarget.Workspace);
+                }
+                
+                // 新しい単純テキストプロンプトの作成
+                const simpleText = {
+                    id: `simple-${Date.now()}`,
+                    name,
+                    category,
+                    type: 'simpleText' as const,
+                    content: fileContent,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    tokenCount: Math.ceil(fileContent.length / 4) // 簡易計算
+                };
+                
+                // 保存
+                const promptsPath = vscode.workspace.getConfiguration('aiDataMerger').get('promptsStoragePath', './prompts') as string;
+                let absolutePromptsPath = promptsPath;
+                
+                if (!path.isAbsolute(promptsPath) && vscode.workspace.workspaceFolders) {
+                    absolutePromptsPath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, promptsPath);
+                }
+                
+                const dirName = 'simpleTexts';
+                const filePath = path.join(absolutePromptsPath, dirName, `${simpleText.id}.json`);
+                
+                // ディレクトリが存在することを確認
+                const dir = path.dirname(filePath);
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                
+                fs.writeFileSync(filePath, JSON.stringify(simpleText, null, 2));
+                
+                // インデックスファイルの更新
+                const indexFilePath = path.join(absolutePromptsPath, 'prompts-index.json');
+                let indexData: { templates: string[], simpleTexts: string[] } = { templates: [], simpleTexts: [] };
+                
+                if (fs.existsSync(indexFilePath)) {
+                    indexData = JSON.parse(fs.readFileSync(indexFilePath, 'utf8'));
+                }
+                
+                if (!Array.isArray(indexData.simpleTexts)) {
+                    indexData.simpleTexts = [];
+                }
+                
+                indexData.simpleTexts.push(simpleText.id);
+                
+                fs.writeFileSync(indexFilePath, JSON.stringify(indexData, null, 2));
+                
+                vscode.window.showInformationMessage(`プロンプト「${name}」を作成しました`);
+                promptTreeProvider.refresh();
+                
+                // エディタで開く
+                const document = await vscode.workspace.openTextDocument({
+                    content: simpleText.content,
+                    language: 'markdown'
+                });
+                
+                await vscode.window.showTextDocument(document);
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`ファイルからのプロンプト作成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('ファイルからのプロンプト作成エラー:', error);
         }
     }));
 }

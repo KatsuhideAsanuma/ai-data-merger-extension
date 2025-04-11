@@ -2,7 +2,7 @@
     "name": "ai-data-merger-extension",
     "displayName": "AI Data Merger Extension",
     "description": "ファイルをマージしてAI参照データを生成する拡張機能",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "engines": {
       "vscode": "^1.60.0"
     },
@@ -19,7 +19,22 @@
       "onCommand:extension.moveFileUp",
       "onCommand:extension.moveFileDown",
       "onCommand:extension.loadProjectMergeList",
-      "onCommand:extension.addHistoryToMergeList"
+      "onCommand:extension.addHistoryToMergeList",
+      "onCommand:extension.createPromptTemplate",
+      "onCommand:extension.createSimplePrompt",
+      "onCommand:extension.generateFromTemplate",
+      "onCommand:extension.editPrompt",
+      "onCommand:extension.previewPrompt",
+      "onCommand:extension.insertSnippet",
+      "onCommand:extension.addPromptToQueue",
+      "onCommand:extension.insertMergedDataToPrompt",
+      "onCommand:extension.exportPrompts",
+      "onCommand:extension.importPrompts",
+      "onCommand:extension.createPromptFromFile",
+      "onCommand:extension.savePromptAsFile",
+      "onCommand:extension.backupPromptsLibrary",
+      "onCommand:extension.restorePromptsLibrary",
+      "onView:promptsTreeView"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -73,6 +88,76 @@
           "command": "extension.addHistoryToMergeList",
           "title": "Add to Project Merge Lists",
           "icon": "$(add)"
+        },
+        {
+          "command": "extension.createPromptTemplate",
+          "title": "Create Prompt Template",
+          "icon": "$(file-add)"
+        },
+        {
+          "command": "extension.createSimplePrompt",
+          "title": "Create Simple Text Prompt",
+          "icon": "$(new-file)"
+        },
+        {
+          "command": "extension.generateFromTemplate",
+          "title": "Generate Text Prompt from Template",
+          "icon": "$(debug-step-over)"
+        },
+        {
+          "command": "extension.editPrompt",
+          "title": "Edit Prompt",
+          "icon": "$(edit)"
+        },
+        {
+          "command": "extension.previewPrompt",
+          "title": "Preview Prompt",
+          "icon": "$(preview)"
+        },
+        {
+          "command": "extension.insertSnippet",
+          "title": "Insert Prompt Snippet",
+          "icon": "$(symbol-snippet)"
+        },
+        {
+          "command": "extension.addPromptToQueue",
+          "title": "Add Prompt to Merge Queue",
+          "icon": "$(add)"
+        },
+        {
+          "command": "extension.insertMergedDataToPrompt",
+          "title": "Insert Merged Data to Prompt",
+          "icon": "$(insert)"
+        },
+        {
+          "command": "extension.exportPrompts",
+          "title": "Export Prompts",
+          "icon": "$(export)"
+        },
+        {
+          "command": "extension.importPrompts",
+          "title": "Import Prompts",
+          "icon": "$(import)"
+        },
+        {
+          "command": "extension.createPromptFromFile",
+          "title": "Create Prompt from File",
+          "icon": "$(file-add)"
+        },
+        {
+          "command": "extension.savePromptAsFile",
+          "title": "Save Prompt as File",
+          "icon": "$(save-as)"
+        },
+        {
+          "command": "extension.backupPromptsLibrary",
+          "title": "Backup Prompts Library",
+          "icon": "$(archive)"
+        },
+        {
+          "command": "extension.restorePromptsLibrary",
+          "title": "Restore Prompts Library",
+          "icon": "$(unarchive)"
         }
       ],
       "viewsContainers": {
@@ -93,6 +178,10 @@
           {
             "id": "historyTreeView",
             "name": "Merge History"
+          },
+          {
+            "id": "promptsTreeView",
+            "name": "Prompts"
           }
         ]
       },
@@ -102,6 +191,12 @@
             "command": "extension.addFileToQueue",
             "title": "Add to File Merge Queue",
             "when": "explorerResourceIsFolder || resourceLangId == markdown || resourceLangId == plaintext || resourceLangId == javascript || resourceLangId == typescript || resourceLangId == json || resourceLangId == yaml || resourceLangId == python || resourceLangId == java || resourceLangId == cpp || resourceLangId == c || resourceLangId == csharp || resourceLangId == go || resourceLangId == rust || resourceLangId == ruby || resourceLangId == php || resourceLangId == html || resourceLangId == css || resourceLangId == xml || resourceLangId == bat || resourceLangId == shellscript || resourceLangId == sql || resourceLangId == scala || resourceLangId == kotlin || resourceLangId == swift || resourceLangId == dart || resourceLangId == groovy || resourceLangId == r || resourceLangId == powershell || resourceLangId == perl || resourceLangId == lua || resourceLangId == clojure || resourceLangId == fsharp || resourceLangId == coffeescript || resourceLangId == jsonc || resourceLangId == ignore || resourceLangId == gitignore", 
+            "group": "navigation"
+          },
+          {
+            "command": "extension.createPromptFromFile",
+            "title": "Create Prompt from File",
+            "when": "resourceLangId == markdown || resourceLangId == plaintext",
             "group": "navigation"
           }
         ],
@@ -119,6 +214,26 @@
           {
             "command": "extension.loadProjectMergeList",
             "when": "view == selectionTreeView",
+            "group": "navigation"
+          },
+          {
+            "command": "extension.createPromptTemplate",
+            "when": "view == promptsTreeView",
+            "group": "navigation"
+          },
+          {
+            "command": "extension.createSimplePrompt",
+            "when": "view == promptsTreeView",
+            "group": "navigation"
+          },
+          {
+            "command": "extension.importPrompts",
+            "when": "view == promptsTreeView",
+            "group": "navigation"
+          },
+          {
+            "command": "extension.exportPrompts",
+            "when": "view == promptsTreeView",
             "group": "navigation"
           }
         ],
@@ -147,6 +262,21 @@
             "command": "extension.addHistoryToMergeList",
             "title": "Add to Project Merge Lists",
             "when": "view == historyTreeView && viewItem == historyItem",
+            "group": "inline"
+          },
+          {
+            "command": "extension.editPrompt",
+            "when": "view == promptsTreeView && (viewItem == promptTemplate || viewItem == promptSimpleText)",
+            "group": "inline"
+          },
+          {
+            "command": "extension.generateFromTemplate", 
+            "when": "view == promptsTreeView && viewItem == promptTemplate",
+            "group": "inline"
+          },
+          {
+            "command": "extension.addPromptToQueue",
+            "when": "view == promptsTreeView && viewItem == promptSimpleText",
             "group": "inline"
           }
         ]
@@ -217,6 +347,45 @@
               "参照コード出力"
             ],
             "description": "マージファイル内のカテゴリ一覧。ファイルの分類に使用されます。"
+          },
+          "aiDataMerger.promptsStoragePath": {
+            "type": "string",
+            "default": "./prompts",
+            "description": "プロンプトデータの保存先フォルダ"
+          },
+          "aiDataMerger.promptCategories": {
+            "type": "array",
+            "default": [
+              "コード生成",
+              "説明要求",
+              "要約",
+              "デバッグ",
+              "一般"
+            ],
+            "description": "プロンプトのカテゴリ一覧"
+          },
+          "aiDataMerger.maxTokenWarningThreshold": {
+            "type": "number",
+            "default": 4000,
+            "description": "トークン数警告の閾値"
+          },
+          "aiDataMerger.promptSnippets": {
+            "type": "array",
+            "default": [
+              {
+                "name": "コード説明",
+                "text": "以下のコードについて説明してください："
+              },
+              {
+                "name": "バグ修正",
+                "text": "以下のコードにあるバグを見つけて修正してください："
+              },
+              {
+                "name": "リファクタリング",
+                "text": "以下のコードをより効率的にリファクタリングしてください："
+              }
+            ],
+            "description": "プロンプト作成時に挿入可能な定型句"
           }
         }
       }
