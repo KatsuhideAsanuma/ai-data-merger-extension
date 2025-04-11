@@ -376,9 +376,18 @@ export class MergeManager {
                                 mergedContent.push(``);
                                 
                                 // マークダウンファイルの場合は特別な処理をする
-                                if (ext === 'md') {
+                                // 拡張子チェックを強化し、README.mdなどの特殊なファイルも確実に処理
+                                const isMarkdown = 
+                                    ext.toLowerCase() === 'md' || 
+                                    language === 'markdown' || 
+                                    fileName.toLowerCase() === 'readme.md';
+                                
+                                if (isMarkdown) {
                                     // マークダウンファイルの場合、見出し階層を調整する
                                     const mdLines = fileContent.split('\n');
+                                    
+                                    // デバッグ情報（開発時に確認用）
+                                    console.log(`マークダウン処理: ${filePath}, 拡張子: ${ext}, 言語: ${language}, 判定: ${isMarkdown}`);
                                     
                                     // マークダウンコンテンツをインラインで追加（見出しレベルを調整）
                                     for (const line of mdLines) {
