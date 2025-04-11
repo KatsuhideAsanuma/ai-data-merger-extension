@@ -231,39 +231,13 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     // プロンプトテンプレート作成コマンド
-    context.subscriptions.push(vscode.commands.registerCommand('extension.createPromptTemplate', async () => {
-        try {
-            await promptManager.createTemplatePrompt();
-            promptTreeProvider.refresh();
-        } catch (error) {
-            vscode.window.showErrorMessage(`テンプレート作成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-            console.error('テンプレート作成エラー:', error);
-        }
-    }));
+    context.subscriptions.push(vscode.commands.registerCommand('extension.createPromptTemplate', () => promptManager.createTemplatePrompt()));
 
     // 単純テキストプロンプト作成コマンド
-    context.subscriptions.push(vscode.commands.registerCommand('extension.createSimplePrompt', async () => {
-        try {
-            await promptManager.createSimpleTextPrompt();
-            promptTreeProvider.refresh();
-        } catch (error) {
-            vscode.window.showErrorMessage(`プロンプト作成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-            console.error('プロンプト作成エラー:', error);
-        }
-    }));
+    context.subscriptions.push(vscode.commands.registerCommand('extension.createSimplePrompt', () => promptManager.createSimpleTextPrompt()));
 
     // テンプレートからテキストプロンプト生成コマンド
-    context.subscriptions.push(vscode.commands.registerCommand('extension.generateFromTemplate', async (item) => {
-        try {
-            if (item && item.promptId) {
-                await promptManager.generateFromTemplate(item.promptId);
-                promptTreeProvider.refresh();
-            }
-        } catch (error) {
-            vscode.window.showErrorMessage(`テンプレートからの生成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-            console.error('テンプレート生成エラー:', error);
-        }
-    }));
+    context.subscriptions.push(vscode.commands.registerCommand('extension.generateFromTemplate', (promptId) => promptManager.generateFromTemplate(promptId)));
 
     // プロンプト編集コマンド
     context.subscriptions.push(vscode.commands.registerCommand('extension.editPrompt', async (item) => {
@@ -415,19 +389,10 @@ export function activate(context: vscode.ExtensionContext) {
                     await vscode.workspace.getConfiguration('aiDataMerger').update('promptCategories', updatedCategories, vscode.ConfigurationTarget.Workspace);
                 }
                 
-                // 新しい単純テキストプロンプトの作成
-                const simpleText = {
-                    id: `simple-${Date.now()}`,
-                    name,
-                    category,
-                    type: 'simpleText' as const,
-                    content: fileContent,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    tokenCount: Math.ceil(fileContent.length / 4) // 簡易計算
-                };
+                // プロンプトID生成
+                const promptId = `simple-${Date.now()}`;
                 
-                // 保存
+                // 一時ファイルパスの生成
                 const promptsPath = vscode.workspace.getConfiguration('aiDataMerger').get('promptsStoragePath', './prompts') as string;
                 let absolutePromptsPath = promptsPath;
                 
@@ -435,49 +400,112 @@ export function activate(context: vscode.ExtensionContext) {
                     absolutePromptsPath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, promptsPath);
                 }
                 
-                const dirName = 'simpleTexts';
-                const filePath = path.join(absolutePromptsPath, dirName, `${simpleText.id}.json`);
-                
-                // ディレクトリが存在することを確認
-                const dir = path.dirname(filePath);
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir, { recursive: true });
+                const tempDir = path.join(absolutePromptsPath, 'temp');
+                if (!fs.existsSync(tempDir)) {
+                    fs.mkdirSync(tempDir, { recursive: true });
                 }
                 
-                fs.writeFileSync(filePath, JSON.stringify(simpleText, null, 2));
+                const tempFilePath = path.join(tempDir, `${promptId}.md`);
                 
-                // インデックスファイルの更新
-                const indexFilePath = path.join(absolutePromptsPath, 'prompts-index.json');
-                let indexData: { templates: string[], simpleTexts: string[] } = { templates: [], simpleTexts: [] };
-                
-                if (fs.existsSync(indexFilePath)) {
-                    indexData = JSON.parse(fs.readFileSync(indexFilePath, 'utf8'));
-                }
-                
-                if (!Array.isArray(indexData.simpleTexts)) {
-                    indexData.simpleTexts = [];
-                }
-                
-                indexData.simpleTexts.push(simpleText.id);
-                
-                fs.writeFileSync(indexFilePath, JSON.stringify(indexData, null, 2));
-                
-                vscode.window.showInformationMessage(`プロンプト「${name}」を作成しました`);
-                promptTreeProvider.refresh();
+                // 一時ファイルに内容を書き込み
+                fs.writeFileSync(tempFilePath, fileContent);
                 
                 // エディタで開く
-                const document = await vscode.workspace.openTextDocument({
-                    content: simpleText.content,
-                    language: 'markdown'
+                const document = await vscode.workspace.openTextDocument(vscode.Uri.file(tempFilePath));
+                const editor = await vscode.window.showTextDocument(document);
+                
+                // 保存コマンドを登録
+                const disposable = vscode.commands.registerCommand('extension.finishPromptFromFileEdit', async () => {
+                    const content = editor.document.getText();
+                    
+                    // 新しい単純テキストプロンプトの作成
+                    const simpleText = {
+                        id: promptId,
+                        name,
+                        category,
+                        type: 'simpleText' as const,
+                        content,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                        tokenCount: Math.ceil(content.length / 4) // 簡易計算
+                    };
+                    
+                    // 永続化データの保存
+                    const simpleTextsDir = path.join(absolutePromptsPath, 'simpleTexts');
+                    if (!fs.existsSync(simpleTextsDir)) {
+                        fs.mkdirSync(simpleTextsDir, { recursive: true });
+                    }
+                    
+                    const jsonFilePath = path.join(simpleTextsDir, `${promptId}.json`);
+                    fs.writeFileSync(jsonFilePath, JSON.stringify(simpleText, null, 2));
+                    
+                    // インデックスファイルの更新
+                    const indexFilePath = path.join(absolutePromptsPath, 'prompts-index.json');
+                    let indexData: { templates: string[], simpleTexts: string[] } = { templates: [], simpleTexts: [] };
+                    
+                    if (fs.existsSync(indexFilePath)) {
+                        indexData = JSON.parse(fs.readFileSync(indexFilePath, 'utf8'));
+                    }
+                    
+                    if (!Array.isArray(indexData.simpleTexts)) {
+                        indexData.simpleTexts = [];
+                    }
+                    
+                    indexData.simpleTexts.push(promptId);
+                    
+                    fs.writeFileSync(indexFilePath, JSON.stringify(indexData, null, 2));
+                    
+                    // エディタを閉じる
+                    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+                    
+                    // 一時ファイルの削除
+                    if (fs.existsSync(tempFilePath)) {
+                        fs.unlinkSync(tempFilePath);
+                    }
+                    
+                    // コマンドの登録解除
+                    disposable.dispose();
+                    
+                    vscode.window.showInformationMessage(`プロンプト「${name}」を作成しました`);
+                    promptTreeProvider.refresh();
                 });
                 
-                await vscode.window.showTextDocument(document);
+                // ステータスバーアイテムを表示
+                const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+                statusBarItem.text = '$(save) プロンプト保存';
+                statusBarItem.tooltip = 'クリックするとプロンプトを保存します';
+                statusBarItem.command = 'extension.finishPromptFromFileEdit';
+                statusBarItem.show();
+                
+                // エディタが閉じられたときにステータスバーアイテムを削除
+                const subscriptions: vscode.Disposable[] = [];
+                subscriptions.push(vscode.window.onDidChangeActiveTextEditor(e => {
+                    if (e !== editor) {
+                        statusBarItem.dispose();
+                        disposable.dispose();
+                        subscriptions.forEach(s => s.dispose());
+                    }
+                }));
+                
+                // ツールチップ表示
+                vscode.window.showInformationMessage(
+                    `プロンプト「${name}」を編集中です。編集完了後、ステータスバーの「プロンプト保存」ボタンをクリックしてください。`
+                );
             }
         } catch (error) {
             vscode.window.showErrorMessage(`ファイルからのプロンプト作成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
             console.error('ファイルからのプロンプト作成エラー:', error);
         }
     }));
+
+    // コマンド登録を行う部分に以下のコードを追加
+    context.subscriptions.push(
+        vscode.commands.registerCommand('extension.addToPromptTemplate', (promptId, filePath) => promptManager.addFileToTemplate(promptId, filePath)),
+        vscode.commands.registerCommand('extension.createTemplate', () => promptManager.createTemplate()),
+        vscode.commands.registerCommand('extension.editTemplate', (templateId) => promptManager.editTemplate(templateId)),
+        vscode.commands.registerCommand('extension.editTemplateVariables', (templateId) => promptManager.editTemplateVariables(templateId)),
+        vscode.commands.registerCommand('extension.deleteTemplate', (templateId) => promptManager.deleteTemplate(templateId))
+    );
 }
 
 export function deactivate() {}

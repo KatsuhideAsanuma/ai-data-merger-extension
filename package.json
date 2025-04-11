@@ -158,6 +158,31 @@
           "command": "extension.restorePromptsLibrary",
           "title": "Restore Prompts Library",
           "icon": "$(unarchive)"
+        },
+        {
+          "command": "ai-data-merger.createTemplate",
+          "title": "テンプレートを作成",
+          "category": "AI Data Merger"
+        },
+        {
+          "command": "ai-data-merger.editTemplate",
+          "title": "テンプレートを編集",
+          "category": "AI Data Merger"
+        },
+        {
+          "command": "ai-data-merger.editTemplateVariables",
+          "title": "テンプレート変数を編集",
+          "category": "AI Data Merger"
+        },
+        {
+          "command": "ai-data-merger.generateFromTemplate",
+          "title": "テンプレートからプロンプト生成",
+          "category": "AI Data Merger"
+        },
+        {
+          "command": "ai-data-merger.deleteTemplate",
+          "title": "テンプレートを削除",
+          "category": "AI Data Merger"
         }
       ],
       "viewsContainers": {
@@ -278,6 +303,26 @@
             "command": "extension.addPromptToQueue",
             "when": "view == promptsTreeView && viewItem == promptSimpleText",
             "group": "inline"
+          },
+          {
+            "command": "ai-data-merger.editTemplate",
+            "when": "view == templateTreeView && viewItem == template",
+            "group": "edit"
+          },
+          {
+            "command": "ai-data-merger.editTemplateVariables",
+            "when": "view == templateTreeView && viewItem == template",
+            "group": "edit"
+          },
+          {
+            "command": "ai-data-merger.generateFromTemplate",
+            "when": "view == templateTreeView && viewItem == template",
+            "group": "generate"
+          },
+          {
+            "command": "ai-data-merger.deleteTemplate",
+            "when": "view == templateTreeView && viewItem == template",
+            "group": "delete"
           }
         ]
       },
