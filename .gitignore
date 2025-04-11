@@ -26,6 +26,11 @@ logs/*.log
 .DS_Store
 Thumbs.db
 
+# merged and prompt directories
+merged/
+prompts/
+merge-lists.json
+
 # IDEs and editors
 # .vscodeフォルダを基本的に除外
 .vscode/*

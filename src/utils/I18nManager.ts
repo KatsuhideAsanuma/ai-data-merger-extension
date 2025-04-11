@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 /**
- * 国際化（i18n）マネージャー
- * VSCode拡張機能の国際化をサポートする
+ * Internationalization (i18n) Manager
+ * Supports internationalization of VSCode extensions
  */
 export class I18nManager {
   private static instance: I18nManager;
@@ -10,15 +10,15 @@ export class I18nManager {
   private locale: string;
 
   private constructor() {
-    // 現在のロケールを取得
+    // Get current locale
     this.locale = vscode.env.language || 'en';
     
-    // デフォルトのメッセージを初期化
+    // Initialize default messages
     this.initializeMessages();
   }
 
   /**
-   * シングルトンインスタンスを取得
+   * Get singleton instance
    */
   public static getInstance(): I18nManager {
     if (!I18nManager.instance) {
@@ -28,14 +28,14 @@ export class I18nManager {
   }
 
   /**
-   * メッセージを初期化
-   * 注意: VS Code は package.nls.json を自動的に処理しますが、
-   * ソースコード内のハードコードされたメッセージ用にこのクラスを使用します。
+   * Initialize messages
+   * Note: VS Code automatically processes package.nls.json,
+   * but we use this class for hardcoded messages in source code.
    */
   private initializeMessages(): void {
-    // 英語（デフォルト）のメッセージ
+    // English (default) messages
     const defaultMessages: { [key: string]: string } = {
-      // 共通
+      // Common
       'common.error': 'Error',
       'common.info': 'Information',
       'common.warning': 'Warning',
@@ -47,7 +47,7 @@ export class I18nManager {
       'common.edit': 'Edit',
       'common.create': 'Create',
       
-      // プロンプト管理
+      // Prompt management
       'prompt.create.title': 'Create New Prompt',
       'prompt.create.nameInput': 'Enter prompt name',
       'prompt.create.categorySelect': 'Select category',
@@ -59,7 +59,7 @@ export class I18nManager {
       'prompt.delete.confirm': 'Are you sure you want to delete this prompt?',
       'prompt.delete.success': 'Prompt "{0}" has been deleted.',
       
-      // テンプレート
+      // Templates
       'template.create.title': 'Create Template',
       'template.create.nameInput': 'Enter template name',
       'template.create.categorySelect': 'Select category',
@@ -72,7 +72,7 @@ export class I18nManager {
       'template.delete.success': 'Template "{0}" has been deleted.',
       'template.variable.edit': 'Edit template variables',
       
-      // マージファイル
+      // Merged files
       'merge.queue.add': 'File added to merge queue',
       'merge.queue.remove': 'File removed from merge queue',
       'merge.queue.clear': 'Merge queue cleared',
@@ -81,7 +81,7 @@ export class I18nManager {
       'merge.generate.success': 'Merged file "{0}" has been generated.',
       'merge.category.select': 'Select category for file',
       
-      // エラー
+      // Errors
       'error.fileNotFound': 'File not found: {0}',
       'error.fileRead': 'Failed to read file: {0}',
       'error.fileWrite': 'Failed to write file: {0}',
@@ -90,7 +90,7 @@ export class I18nManager {
       'error.mergeGenerate': 'Failed to generate merged file: {0}'
     };
     
-    // 日本語のメッセージ
+    // Japanese messages
     const jaMessages: { [key: string]: string } = {
       // 共通
       'common.error': 'エラー',
@@ -147,7 +147,7 @@ export class I18nManager {
       'error.mergeGenerate': 'マージファイルの生成に失敗しました: {0}'
     };
     
-    // 現在のロケールに基づいてメッセージを設定
+    // Set messages based on current locale
     if (this.locale.startsWith('ja')) {
       this.messages = { ...defaultMessages, ...jaMessages };
     } else {
@@ -156,15 +156,15 @@ export class I18nManager {
   }
 
   /**
-   * メッセージを取得
-   * @param key メッセージキー
-   * @param args 置換引数
-   * @returns 翻訳されたメッセージ
+   * Get message
+   * @param key Message key
+   * @param args Replacement arguments
+   * @returns Translated message
    */
   public getMessage(key: string, ...args: any[]): string {
     let message = this.messages[key] || key;
     
-    // 引数がある場合は置換
+    // Replace arguments if available
     if (args.length > 0) {
       args.forEach((arg, index) => {
         message = message.replace(`{${index}}`, arg.toString());
@@ -175,8 +175,8 @@ export class I18nManager {
   }
 
   /**
-   * 現在のロケールを取得
-   * @returns 現在のロケール
+   * Get current locale
+   * @returns Current locale
    */
   public getLocale(): string {
     return this.locale;
@@ -184,46 +184,46 @@ export class I18nManager {
 }
 
 /**
- * 翻訳用のヘルパー関数
- * @param key メッセージキー
- * @param args 置換引数
- * @returns 翻訳されたメッセージ
+ * Helper function for translation
+ * @param key Message key
+ * @param args Replacement arguments
+ * @returns Translated message
  */
 export function t(key: string, ...args: any[]): string {
   return I18nManager.getInstance().getMessage(key, ...args);
 }
 
 /**
- * 情報メッセージを表示
- * @param key メッセージキー
- * @param args 置換引数
+ * Show information message
+ * @param key Message key
+ * @param args Replacement arguments
  */
 export function showInfo(key: string, ...args: any[]): Thenable<string | undefined> {
   return vscode.window.showInformationMessage(t(key, ...args));
 }
 
 /**
- * エラーメッセージを表示
- * @param key メッセージキー
- * @param args 置換引数
+ * Show error message
+ * @param key Message key
+ * @param args Replacement arguments
  */
 export function showError(key: string, ...args: any[]): Thenable<string | undefined> {
   return vscode.window.showErrorMessage(t(key, ...args));
 }
 
 /**
- * 警告メッセージを表示
- * @param key メッセージキー
- * @param args 置換引数
+ * Show warning message
+ * @param key Message key
+ * @param args Replacement arguments
  */
 export function showWarning(key: string, ...args: any[]): Thenable<string | undefined> {
   return vscode.window.showWarningMessage(t(key, ...args));
 }
 
 /**
- * 確認メッセージを表示
- * @param key メッセージキー
- * @param args 置換引数
+ * Show confirmation message
+ * @param key Message key
+ * @param args Replacement arguments
  */
 export async function showConfirmation(key: string, ...args: any[]): Promise<boolean> {
   const result = await vscode.window.showWarningMessage(

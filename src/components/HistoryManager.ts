@@ -7,7 +7,7 @@ export interface MergeHistoryItem {
     queue: { [category: string]: string[] };
     outputPath: string;
     fileName: string;
-    name?: string; // マージリストの名前（表示用）
+    name?: string; // Name of merge list (for display)
 }
 
 export class HistoryManager {
@@ -15,7 +15,7 @@ export class HistoryManager {
     private historyFilePath: string;
 
     constructor(private context: vscode.ExtensionContext) {
-        // グローバルストレージパス内に履歴ファイルを保存
+        // Save history file in global storage path
         this.historyFilePath = path.join(context.globalStoragePath, 'mergeHistory.json');
         this.loadHistory();
     }
@@ -26,7 +26,7 @@ export class HistoryManager {
             try {
                 this.history = JSON.parse(content);
             } catch (error) {
-                vscode.window.showErrorMessage("履歴ファイルの読み込みでエラーが発生しました。");
+                vscode.window.showErrorMessage("Error loading history file.");
                 this.history = [];
             }
         }

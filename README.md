@@ -1,235 +1,235 @@
 # AI Data Merger Extension
 
-複数ファイルをマージしてAI用の参照データを生成するVSCode拡張機能です。大規模言語モデル（LLM）への入力用データファイルを効率的に作成できます。
+A VSCode extension that merges multiple files to generate reference data for AI. Efficiently create input data files for large language models (LLMs).
 
 ![Extension Icon](resources/icon.png)
 
-## 概要
+## Overview
 
-AI開発やプロンプトエンジニアリングでは、複数のファイルからコンテキスト情報を集めてAIに提供する必要があります。この拡張機能は、複数のファイルを選択し、整形された単一のMarkdownファイルに結合することで、AIへの効率的な情報提供をサポートします。またプロンプトの管理をマージ機能に統合し作成したプロンプトをマージファイルにも反映させることができます。
+In AI development and prompt engineering, you often need to collect context information from multiple files to provide to AI. This extension supports efficient information provision by selecting multiple files and combining them into a single formatted Markdown file. The prompt management functionality is also integrated with merge functionality, allowing created prompts to be reflected in merged files.
 
-### 主な特徴
+### Key Features
 
-- **直感的なファイル選択**: エクスプローラーの右クリックメニューからファイルを追加
-- **カテゴリ管理**: ファイルを「プロンプト出力」「設計書出力」「参照コード出力」などのカテゴリに分類
-- **柔軟な順序管理**: サイドバーでファイル順序の変更・カテゴリ変更が可能
-- **目次生成**: マージファイルには自動的に階層構造の目次が生成される
-- **高度なプロンプト管理**: テンプレートベースのプロンプト作成と変数置換に対応
-- **リアルタイム編集**: プロンプトとテンプレートのリアルタイム編集と自動保存機能
-- **カスタマイズ可能**: 出力先パス、ファイル名、カテゴリなどをカスタマイズ可能
-- **マージ履歴**: 過去のマージ操作を保存し、再実行可能
-- **プロジェクト別マージリスト**: プロジェクト単位でよく使うマージリストを保存・再利用
-- **プロンプトテンプレート**: 再利用可能なプロンプトテンプレートを作成・管理
-- **変数置換機能**: テンプレート内の変数を簡単に置換してカスタムプロンプトを生成
-- **プロンプトのマージ**: マージファイルにもプロンプトを反映させることができます
+- **Intuitive File Selection**: Add files from the Explorer right-click menu
+- **Category Management**: Classify files into categories such as "Prompt Output", "Design Document Output", "Reference Code Output", etc.
+- **Flexible Order Management**: Change file order and categories in the sidebar
+- **Table of Contents Generation**: Automatically generates hierarchical table of contents in merged files
+- **Advanced Prompt Management**: Template-based prompt creation with variable substitution
+- **Real-time Editing**: Real-time editing and auto-save function for prompts and templates
+- **Customizable**: Customize output paths, filenames, categories, etc.
+- **Merge History**: Save and replay past merge operations
+- **Project-specific Merge Lists**: Save and reuse frequently used merge lists by project
+- **Prompt Templates**: Create and manage reusable prompt templates
+- **Variable Substitution**: Easily replace variables in templates to generate custom prompts
+- **Prompt Merging**: Reflect prompts in merged files as well
 
-## インストール方法
+## Installation
 
-### 方法1: VSCode Marketplaceからインストール
+### Method 1: Install from VSCode Marketplace
 
-1. VSCodeの拡張機能タブを開く
-2. 検索ボックスに「AI Data Merger」と入力
-3. 「AI Data Merger Extension」を選択してインストール
+1. Open the Extensions tab in VSCode
+2. Type "AI Data Merger" in the search box
+3. Select "AI Data Merger Extension" and install
 
-### 方法2: VSIXファイルからインストール
+### Method 2: Install from VSIX file
 
-1. リポジトリをクローン: `git clone https://github.com/katsuhideAsanuma/ai-data-merger-extension.git`
-2. 依存パッケージをインストール: `npm install`
-3. 拡張機能をパッケージ化: `npm run package`
-4. 生成されたVSIXファイルをインストール:
-   - VSCodeで `Ctrl+Shift+P` → 「Install from VSIX」を選択
-   - または、コマンドラインで: `code --install-extension ai-data-merger-extension-0.1.0.vsix`
+1. Clone the repository: `git clone https://github.com/katsuhideAsanuma/ai-data-merger-extension.git`
+2. Install dependencies: `npm install`
+3. Package the extension: `npm run package`
+4. Install the generated VSIX file:
+   - In VSCode, press `Ctrl+Shift+P` → Select "Install from VSIX"
+   - Or via command line: `code --install-extension ai-data-merger-extension-0.1.0.vsix`
 
-## 使用方法
+## Usage
 
-### 基本的な使い方
+### Basic Usage
 
-1. **サイドバーアイコン**: VSCodeの左側のアクティビティバーで「AI Data Merger」アイコンをクリック
-2. **ファイルの追加**: エクスプローラーでファイルを右クリックし、「Add to File Merge Queue」を選択
-   - ファイルがカテゴリ選択ダイアログで指定したカテゴリに追加されます
-3. **マージファイルの生成**: サイドバーの「Generate Merged File」ボタンをクリック
-   - ファイル名を指定するダイアログが表示されます
-   - 既定のファイル名またはカスタムファイル名を入力
-4. **結果の確認**: 生成されたマージファイルが自動的に開きます
+1. **Sidebar Icon**: Click the "AI Data Merger" icon in the activity bar on the left side of VSCode
+2. **Adding Files**: Right-click on files in Explorer and select "Add to File Merge Queue"
+   - Files will be added to the category specified in the category selection dialog
+3. **Generating Merged Files**: Click the "Generate Merged File" button in the sidebar
+   - A dialog will appear asking you to specify a filename
+   - Enter the default filename or a custom filename
+4. **Check Results**: The generated merged file will open automatically
 
-### プロンプト管理機能
+### Prompt Management Features
 
-新世代のプロンプト管理システムを搭載し、直感的な編集と自動保存機能を提供します。
+Equipped with a next-generation prompt management system that provides intuitive editing and auto-save functionality.
 
-#### テンプレートの作成と編集
+#### Creating and Editing Templates
 
-1. **テンプレート作成**: サイドバーの「Prompts」タブで「Create Prompt Template」ボタンをクリック
-   - テンプレート名とカテゴリを指定
-   - 変数は `[[変数名]]` の形式で記述（例: `こんにちは、[[名前]]さん`）
-   - **変更の自動保存**: 編集内容は自動的に保存され、変数が抽出されます
+1. **Creating Templates**: Click the "Create Prompt Template" button in the "Prompts" tab in the sidebar
+   - Specify template name and category
+   - Write variables in the format `[[variable name]]` (e.g., `Hello, [[name]]`)
+   - **Auto-save Changes**: Edited content is automatically saved and variables are extracted
 
-2. **テンプレート編集**: テンプレート項目の編集アイコンをクリック
-   - 直接Markdownファイルとして編集可能
-   - 保存時に変数が自動的に抽出・更新
+2. **Editing Templates**: Click the edit icon on the template item
+   - Edit directly as a Markdown file
+   - Variables are automatically extracted and updated when saved
 
-#### 単純テキストプロンプトの管理
+#### Managing Simple Text Prompts
 
-1. **プロンプト作成**: 「Create Simple Text Prompt」ボタンをクリック
-   - プロンプト名とカテゴリを指定
-   - エディタでプロンプト内容を編集
-   - **リアルタイム保存**: 変更は自動的に保存されます
+1. **Creating Prompts**: Click the "Create Simple Text Prompt" button
+   - Specify prompt name and category
+   - Edit prompt content in the editor
+   - **Real-time Saving**: Changes are automatically saved
 
-2. **テンプレートからの生成**: テンプレート項目の「Generate from Template」をクリック
-   - 変数入力フォームが表示され、各変数の値を設定可能
-   - 変数値を入力後、新しいプロンプトとして保存
+2. **Generating from Templates**: Click "Generate from Template" on the template item
+   - A variable input form appears where you can set values for each variable
+   - After entering variable values, save as a new prompt
 
-#### インポート・エクスポート
+#### Import/Export
 
-1. **エクスポート**: 「Export Prompts」ボタンをクリック
-   - JSON, マークダウン、テキスト形式でエクスポート可能
-   - 全プロンプト、テンプレートのみ、単純テキストのみから選択可能
+1. **Export**: Click the "Export Prompts" button
+   - Export in JSON, Markdown, or text format
+   - Choose from all prompts, templates only, or simple text only
 
-2. **インポート**: 「Import Prompts」ボタンをクリック
-   - ファイル、クリップボード、エディタから選択可能
-   - 重複プロンプトの処理方法を選択（上書き、リネーム、スキップ）
+2. **Import**: Click the "Import Prompts" button
+   - Choose from file, clipboard, or editor
+   - Select how to handle duplicate prompts (overwrite, rename, skip)
 
-### ファイル管理機能
+### File Management Features
 
-- **ファイルの順序変更**: サイドバーのファイル項目にある上下矢印ボタンで順序を変更
-- **カテゴリの変更**: ファイル項目のフォルダアイコンをクリックしてカテゴリを変更
-- **ファイルの削除**: ファイル項目のゴミ箱アイコンをクリックして削除
-- **キューのクリア**: サイドバー上部の「Clear Merge Queue」ボタンでキューをクリア
+- **Changing File Order**: Change order using the up/down arrow buttons on file items in the sidebar
+- **Changing Categories**: Click the folder icon on file items to change the category
+- **Deleting Files**: Click the trash icon on file items to delete
+- **Clearing the Queue**: Clear the queue using the "Clear Merge Queue" button at the top of the sidebar
 
-### 履歴と再利用
+### History and Reuse
 
-- **マージ履歴**: サイドバーの「Merge History」タブで過去のマージ操作を確認
-- **マージの再実行**: 履歴項目をクリックして過去のマージ設定を再実行
-- **マージリストの保存**: よく使うマージ設定を「Add to Project Merge Lists」で保存
-- **保存済みリストの読み込み**: 「Load Project Merge List」ボタンでプロジェクト内のマージリストを読み込み
+- **Merge History**: Check past merge operations in the "Merge History" tab in the sidebar
+- **Replaying Merges**: Click on history items to replay past merge settings
+- **Saving Merge Lists**: Save frequently used merge settings with "Add to Project Merge Lists"
+- **Loading Saved Lists**: Load merge lists in the project using the "Load Project Merge List" button
 
-## 設定オプション
+## Configuration Options
 
-VSCodeの設定（`settings.json`）で以下の項目をカスタマイズできます：
+You can customize the following items in VSCode settings (`settings.json`):
 
 ```json
 {
-  "aiDataMerger.outputPath": "./merged",      // マージファイルの出力先フォルダ
-  "aiDataMerger.defaultFileName": "merged_data.md",  // デフォルトのファイル名
-  "aiDataMerger.allowedFileTypes": [          // マージ可能なファイル形式
+  "aiDataMerger.outputPath": "./merged",      // Output folder for merged files
+  "aiDataMerger.defaultFileName": "merged_data.md",  // Default filename
+  "aiDataMerger.allowedFileTypes": [          // File formats that can be merged
     "markdown", "plaintext", "javascript", "typescript", "json", "yaml",
     "python", "java", "cpp", "csharp", "go", "rust", "ruby", "php",
     "html", "css", "xml", "shellscript", "bat", "sql"
-    // その他多数のファイル形式をサポート
+    // Many other file formats supported
   ],
-  "aiDataMerger.showDataFileContent": false,  // JSONやYAMLファイルの全コード表示(falseの場合は構造のみ)
-  "aiDataMerger.categories": [                // マージファイル内のカテゴリ一覧
-    "プロンプト出力",
-    "設計書出力", 
-    "参照コード出力"
-    // カスタムカテゴリを追加可能
+  "aiDataMerger.showDataFileContent": false,  // Show all code in JSON/YAML files (if false, shows structure only)
+  "aiDataMerger.categories": [                // Categories in merged files
+    "Prompt Output",
+    "Design Document Output", 
+    "Reference Code Output"
+    // Custom categories can be added
   ],
-  "aiDataMerger.promptsStoragePath": "./prompts", // プロンプト保存先ディレクトリ
-  "aiDataMerger.promptCategories": [          // プロンプトカテゴリのデフォルト一覧
-    "コード生成", "説明要求", "要約", "デバッグ", "一般"
+  "aiDataMerger.promptsStoragePath": "./prompts", // Directory for storing prompts
+  "aiDataMerger.promptCategories": [          // Default list of prompt categories
+    "Code Generation", "Explanation Request", "Summary", "Debug", "General"
   ],
-  "aiDataMerger.maxTokenWarningThreshold": 4000, // トークン数警告しきい値
+  "aiDataMerger.maxTokenWarningThreshold": 4000, // Token count warning threshold
 }
 ```
 
-### カテゴリのカスタマイズ
+### Customizing Categories
 
-カテゴリは、VSCodeの設定から簡単にカスタマイズできます：
+Categories can be easily customized from VSCode settings:
 
-1. **設定画面から変更**: 
-   - VSCodeの設定画面（`Ctrl+,`）を開く
-   - 「AI Data Merger」を検索
-   - `aiDataMerger.categories` の配列を編集
+1. **Change from Settings Screen**: 
+   - Open VSCode settings (`Ctrl+,`)
+   - Search for "AI Data Merger"
+   - Edit the `aiDataMerger.categories` array
 
-2. **settings.jsonで直接編集**:
-   - `settings.json`に以下を追加・編集
+2. **Edit Directly in settings.json**:
+   - Add or edit the following in `settings.json`
    ```json
    "aiDataMerger.categories": [
-     "プロンプト出力",
-     "設計書出力",
-     "参照コード出力",
-     "カスタムカテゴリ1",  // 独自のカテゴリを追加
-     "カスタムカテゴリ2"
+     "Prompt Output",
+     "Design Document Output",
+     "Reference Code Output",
+     "Custom Category 1",  // Add your own categories
+     "Custom Category 2"
    ]
    ```
 
-### プロンプトカテゴリのカスタマイズ
+### Customizing Prompt Categories
 
-プロンプトカテゴリも同様に設定から変更できます：
+Prompt categories can be changed similarly from settings:
 
 ```json
 "aiDataMerger.promptCategories": [
-  "コード生成",
-  "説明要求",
-  "要約",
-  "デバッグ",
-  "一般",
-  "API呼び出し",  // 新しいカテゴリを追加
-  "データ分析"
+  "Code Generation",
+  "Explanation Request",
+  "Summary",
+  "Debug",
+  "General",
+  "API Calls",  // Add new categories
+  "Data Analysis"
 ]
 ```
 
-### データファイル表示の設定
+### Data File Display Settings
 
-JSONやYAMLなどのデータファイルの表示方法を設定できます：
+You can configure how data files like JSON and YAML are displayed:
 
-- `aiDataMerger.showDataFileContent`: `false`（デフォルト）の場合、データファイルは構造のみ表示され、コード全体は表示されません。`true`に設定すると、データファイルも完全表示されます。
+- `aiDataMerger.showDataFileContent`: If `false` (default), data files show structure only, not the entire code. If set to `true`, data files are fully displayed.
 
-## 出力ファイル形式
+## Output File Format
 
-生成されるマージファイルは以下の形式で構造化されます：
+The generated merged file is structured in the following format:
 
-1. **メタデータセクション**: タイトル、タイムスタンプ、ファイル数などの情報
-2. **目次**: すべてのカテゴリとファイルへのリンクを含む階層的な目次
-3. **コンテンツ**: カテゴリごとにグループ化されたファイル内容
-   - マークダウンファイル: インラインで内容を表示、見出しレベルを調整
-   - コードファイル: 言語に応じた構文ハイライトを含むコードブロックで表示
-   - ディレクトリ: ファイル一覧をコードブロックで表示
+1. **Metadata Section**: Information such as title, timestamp, number of files, etc.
+2. **Table of Contents**: Hierarchical table of contents with links to all categories and files
+3. **Content**: File contents grouped by category
+   - Markdown files: Display content inline, adjusting heading levels
+   - Code files: Display in code blocks with syntax highlighting according to language
+   - Directories: Display file list in code blocks
 
-## プロジェクト構成
+## Project Structure
 
 ```
 ai-data-merger-extension/
-├── src/                    # ソースコード
-│   ├── extension.ts        # 拡張機能のエントリーポイント
-│   ├── components/         # 主要コンポーネント
-│   │   ├── ConfigManager.ts    # 設定管理
-│   │   ├── HistoryManager.ts   # 履歴管理
-│   │   ├── MergeManager.ts     # マージ処理
-│   │   ├── PromptManager.ts    # プロンプト管理
-│   │   └── QueueManager.ts     # ファイルキュー管理
-│   ├── treeViews/          # ツリービュー実装
+├── src/                    # Source code
+│   ├── extension.ts        # Extension entry point
+│   ├── components/         # Main components
+│   │   ├── ConfigManager.ts    # Configuration management
+│   │   ├── HistoryManager.ts   # History management
+│   │   ├── MergeManager.ts     # Merge processing
+│   │   ├── PromptManager.ts    # Prompt management
+│   │   └── QueueManager.ts     # File queue management
+│   ├── treeViews/          # Tree view implementation
 │   │   ├── HistoryTreeViewProvider.ts
 │   │   ├── PromptTreeViewProvider.ts
 │   │   └── SelectionTreeViewProvider.ts
-│   ├── commands/           # コマンド実装
-│   └── utils/              # ユーティリティ関数
-├── resources/              # アイコンなどのリソース
-├── config/                 # 設定ファイル
-├── prompts/                # プロンプト保存ディレクトリ
-│   ├── templates/          # テンプレート保存先
-│   └── simpleTexts/        # 単純テキスト保存先
-└── merged/                 # デフォルト出力ディレクトリ
+│   ├── commands/           # Command implementation
+│   └── utils/              # Utility functions
+├── resources/              # Resources such as icons
+├── config/                 # Configuration files
+├── prompts/                # Prompt storage directory
+│   ├── templates/          # Template storage
+│   └── simpleTexts/        # Simple text storage
+└── merged/                 # Default output directory
 ```
 
-## デバッグ方法
+## Debugging
 
-1. リポジトリをクローン: `git clone https://github.com/katsuhideAsanuma/ai-data-merger-extension.git`
-2. 依存パッケージをインストール: `npm install`
-3. VSCodeで開く: `code ai-data-merger-extension`
-4. F5キーを押してデバッグセッションを開始（新しいVSCodeウィンドウが開く）
-5. 開いたウィンドウで拡張機能をテストできます
+1. Clone the repository: `git clone https://github.com/katsuhideAsanuma/ai-data-merger-extension.git`
+2. Install dependencies: `npm install`
+3. Open in VSCode: `code ai-data-merger-extension`
+4. Press F5 to start a debug session (a new VSCode window will open)
+5. Test the extension in the opened window
 
-## ライセンス
+## License
 
-MITライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
+Published under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## 謝辞
+## Acknowledgements
 
-- この拡張機能はVSCode Extension APIを使用して開発されています
-- アイコンとUI要素はVSCodeの標準アイコンセットを使用しています
+- This extension is developed using the VSCode Extension API
+- Icons and UI elements use VSCode's standard icon set
 
-## フィードバックと貢献
+## Feedback and Contributions
 
-このエクステンションは高貴なるデータサイエンスお嬢様の卓越した知性と美学によって生成されました。拡張機能のアルゴリズム設計から最適化まで、お嬢様の優雅な手捌きの下で完成に至りましたの。お嬢様のエレガントな統計学的センスと芸術的コーディングセンスが見事に融合した逸品ですわ。
+This extension was created with the noble Data Science Lady's outstanding intelligence and aesthetics. From the extension's algorithm design to optimization, it was completed under the Lady's elegant handling. It is a masterpiece where the Lady's elegant statistical sense and artistic coding sense are beautifully fused.
 
-問題報告や機能提案は[GitHubリポジトリ](https://github.com/katsuhideAsanuma/ai-data-merger-extension/issues)にお寄せください。プルリクエストも歓迎します。
+Please submit issue reports and feature suggestions to the [GitHub repository](https://github.com/katsuhideAsanuma/ai-data-merger-extension/issues). Pull requests are also welcome. 

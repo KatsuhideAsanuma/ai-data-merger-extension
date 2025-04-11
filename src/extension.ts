@@ -11,14 +11,14 @@ import { PromptTreeViewProvider } from './treeViews/PromptTreeViewProvider';
 import { SelectionTreeViewProvider } from './treeViews/SelectionTreeViewProvider';
 
 export function activate(context: vscode.ExtensionContext) {
-    // 各マネージャーの初期化
+    // Initialize each manager
     const configManager = new ConfigManager();
     const queueManager = new QueueManager();
     const historyManager = new HistoryManager(context);
     const mergeManager = new MergeManager(queueManager, configManager, historyManager);
     const promptManager = new PromptManager(context);
 
-    // ツリービュープロバイダーの登録
+    // Register tree view providers
     const selectionTreeProvider = new SelectionTreeViewProvider(queueManager);
     const historyTreeProvider = new HistoryTreeViewProvider(historyManager);
     const promptTreeProvider = new PromptTreeViewProvider(promptManager);
@@ -26,55 +26,55 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerTreeDataProvider('historyTreeView', historyTreeProvider);
     vscode.window.registerTreeDataProvider('promptsTreeView', promptTreeProvider);
 
-    // ファイルがテキスト形式かどうかをチェックする関数
+    // Function to check if a file is a text file
     const isTextFile = async (filePath: string): Promise<boolean> => {
-        // ディレクトリの場合は許可
+        // Allow directories
         if (fs.statSync(filePath).isDirectory()) {
             return true;
         }
         
-        // 設定から許可されたファイルタイプを取得
+        // Get allowed file types from settings
         const allowedTypes = vscode.workspace.getConfiguration('aiDataMerger').get('allowedFileTypes') as string[];
         
         try {
-            // ファイルのLanguageIdを取得
+            // Get the file's LanguageId
             const doc = await vscode.workspace.openTextDocument(filePath);
             const languageId = doc.languageId;
             
             return allowedTypes.includes(languageId);
         } catch (error) {
-            // ファイルが開けない場合はバイナリファイルとみなす
-            console.log(`ファイルを開けませんでした: ${filePath}`, error);
+            // If file can't be opened, consider it a binary file
+            console.log(`Could not open file: ${filePath}`, error);
             return false;
         }
     };
 
-    // コマンドの登録
+    // Register commands
     context.subscriptions.push(vscode.commands.registerCommand('extension.addFileToQueue', async (uri: vscode.Uri) => {
-        // ファイルの種類を確認
+        // Check file type
         const isText = await isTextFile(uri.fsPath);
         
         if (!isText && !fs.statSync(uri.fsPath).isDirectory()) {
-            vscode.window.showWarningMessage(`対応していないファイル形式です: ${path.basename(uri.fsPath)}`);
+            vscode.window.showWarningMessage(`Unsupported file type: ${path.basename(uri.fsPath)}`);
             return;
         }
         
-        // カテゴリ選択UIを表示
+        // Show category selection UI
         if (configManager.categories.length > 0) {
             const selectedCategory = await vscode.window.showQuickPick(configManager.categories, {
-                placeHolder: 'ファイルを追加するカテゴリを選択してください'
+                placeHolder: 'Select a category to add the file to'
             });
 
             if (selectedCategory) {
-                // 選択されたカテゴリにファイルを追加
+                // Add file to selected category
                 queueManager.addFile(uri.fsPath, selectedCategory);
-                vscode.window.showInformationMessage(`ファイルを「${selectedCategory}」カテゴリに追加しました`);
+                vscode.window.showInformationMessage(`File added to category "${selectedCategory}"`);
             } else {
-                // キャンセルされた場合
+                // Cancelled
                 return;
             }
         } else {
-            // カテゴリがない場合はデフォルトで追加
+            // Add to default if no categories
             queueManager.addFile(uri.fsPath);
         }
         selectionTreeProvider.refresh();
@@ -86,22 +86,22 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('extension.generateMergedFile', async () => {
-        // キューが空でないか確認
+        // Check if queue is not empty
         const queue = queueManager.getQueue();
         const hasFiles = Object.values(queue).some(files => files && files.length > 0);
         
         if (!hasFiles) {
-            vscode.window.showWarningMessage("マージキューにファイルが追加されていません。先にファイルを追加してください。");
+            vscode.window.showWarningMessage("No files added to merge queue. Please add files first.");
             return;
         }
 
         try {
-            // ファイル名を指定せずにマージを実行（ダイアログが表示される）
+            // Execute merge without specifying a file name (dialog will be displayed)
             await mergeManager.generateMergedFile();
             historyTreeProvider.refresh();
         } catch (error) {
-            vscode.window.showErrorMessage(`マージ処理中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-            console.error('マージエラー詳細:', error);
+            vscode.window.showErrorMessage(`Error during merge process: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('Merge error details:', error);
         }
     }));
 
@@ -109,52 +109,52 @@ export function activate(context: vscode.ExtensionContext) {
         try {
             mergeManager.loadHistoryMerge(historyItem);
             
-            // 出力パスとファイル名を結合
+            // Combine output path and file name
             let fullOutputPath = '';
             if (historyItem.outputPath && historyItem.fileName) {
                 fullOutputPath = path.join(historyItem.outputPath, historyItem.fileName);
             }
             
-            // 履歴に保存されているファイル名を使用してマージを実行
+            // Execute merge using the file name saved in history
             await mergeManager.generateMergedFile(fullOutputPath);
         } catch (error) {
-            vscode.window.showErrorMessage(`再実行中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-            console.error('再実行エラー詳細:', error);
+            vscode.window.showErrorMessage(`Error during re-execution: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('Re-execution error details:', error);
         }
     }));
 
-    // 履歴アイテムをマージリストに追加するコマンド
+    // Command to add a history item to merge list
     context.subscriptions.push(vscode.commands.registerCommand('extension.addHistoryToMergeList', async (item) => {
         try {
             if (item && item.historyItem) {
-                // マージリストに追加
+                // Add to merge list
                 await mergeManager.addHistoryToProjectMergeList(item.historyItem);
             }
         } catch (error) {
-            vscode.window.showErrorMessage(`マージリストへの追加に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-            console.error('マージリスト追加エラー:', error);
+            vscode.window.showErrorMessage(`Failed to add to merge list: ${error instanceof Error ? error.message : String(error)}`);
+            console.error('Merge list addition error:', error);
         }
     }));
 
-    // ファイルのカテゴリ変更コマンド
+    // Command to change file category
     context.subscriptions.push(vscode.commands.registerCommand('extension.changeFileCategory', async (item: any) => {
         if (item && item.category && typeof item.index === 'number') {
             const selectedCategory = await vscode.window.showQuickPick(
                 configManager.categories.filter(cat => cat !== item.category),
-                { placeHolder: '移動先のカテゴリを選択してください' }
+                { placeHolder: 'Select destination category' }
             );
 
             if (selectedCategory) {
-                // 元のカテゴリから削除
+                // Remove from original category
                 const filePath = queueManager.getQueue()[item.category][item.index];
                 queueManager.removeFile(item.category, item.index);
                 
-                // 新しいカテゴリに追加
+                // Add to new category
                 queueManager.addFile(filePath, selectedCategory);
                 
-                // ツリーを更新
+                // Update tree
                 selectionTreeProvider.refresh();
-                vscode.window.showInformationMessage(`ファイルを「${selectedCategory}」カテゴリに移動しました`);
+                vscode.window.showInformationMessage(`File moved to category "${selectedCategory}"`);
             }
         }
     }));
@@ -165,7 +165,7 @@ export function activate(context: vscode.ExtensionContext) {
             const filePath = queueManager.getQueue()[item.category][item.index];
             queueManager.removeFile(item.category, item.index);
             selectionTreeProvider.refresh();
-            vscode.window.showInformationMessage(`ファイルをキューから削除しました: ${path.basename(filePath)}`);
+            vscode.window.showInformationMessage(`File removed from queue: ${path.basename(filePath)}`);
         }
     }));
 
@@ -199,21 +199,21 @@ export function activate(context: vscode.ExtensionContext) {
             const mergeLists = await mergeManager.loadProjectMergeLists();
             
             if (mergeLists.length === 0) {
-                vscode.window.showInformationMessage('プロジェクトにマージリストが保存されていません。');
+                vscode.window.showInformationMessage('No merge lists saved for the project.');
                 return;
             }
             
             // マージリストの選択肢を作成
             const items = mergeLists.map(item => ({
                 label: item.name || item.fileName,
-                description: `最終更新: ${new Date(item.timestamp).toLocaleString()}`,
-                detail: `ファイル数: ${Object.values(item.queue).reduce((sum, files) => sum + files.length, 0)}`,
+                description: `Last updated: ${new Date(item.timestamp).toLocaleString()}`,
+                detail: `File count: ${Object.values(item.queue).reduce((sum, files) => sum + files.length, 0)}`,
                 mergeList: item
             }));
             
             // マージリストを選択
             const selected = await vscode.window.showQuickPick(items, {
-                placeHolder: '実行するマージリストを選択してください'
+                placeHolder: 'Select merge list to execute'
             });
             
             if (!selected) {

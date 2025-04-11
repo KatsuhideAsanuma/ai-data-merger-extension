@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { PromptManager, SimpleTextPrompt, TemplatePrompt } from '../components/PromptManager';
 
-// プロンプトツリーアイテムクラス
+// Prompt tree item class
 export class PromptTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
@@ -12,68 +12,68 @@ export class PromptTreeItem extends vscode.TreeItem {
   ) {
     super(label, collapsibleState);
     
-    // アイコン設定
+    // Set icon
     if (type === 'template') {
       this.iconPath = { light: './resources/light/template.svg', dark: './resources/dark/template.svg' };
     } else if (type === 'simpleText') {
       this.iconPath = { light: './resources/light/text.svg', dark: './resources/dark/text.svg' };
     } else {
-      // カテゴリの場合
+      // For category
       this.iconPath = { light: './resources/light/folder.svg', dark: './resources/dark/folder.svg' };
     }
     
-    // コマンド設定
+    // Set command
     if (promptId) {
       this.command = {
         command: 'extension.previewPrompt',
-        title: 'プロンプトをプレビュー',
+        title: 'Preview Prompt',
         arguments: [promptId, type]
       };
     }
   }
 }
 
-// プロンプトツリービュープロバイダークラス
+// Prompt tree view provider class
 export class PromptTreeViewProvider implements vscode.TreeDataProvider<PromptTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<PromptTreeItem | undefined | null> = new vscode.EventEmitter<PromptTreeItem | undefined | null>();
   readonly onDidChangeTreeData: vscode.Event<PromptTreeItem | undefined | null> = this._onDidChangeTreeData.event;
   
   constructor(private promptManager: PromptManager) {
-    // プロンプト変更イベントを監視
+    // Monitor prompt change events
     this.promptManager.onDidChangePrompts(() => {
       this.refresh();
     });
   }
   
-  // ツリービューの更新
+  // Update tree view
   public refresh(): void {
     this._onDidChangeTreeData.fire();
   }
   
-  // ツリー要素の取得
+  // Get tree item
   getTreeItem(element: PromptTreeItem): vscode.TreeItem {
     return element;
   }
   
-  // ツリーの子要素取得
+  // Get child elements of tree
   getChildren(element?: PromptTreeItem): Thenable<PromptTreeItem[]> {
-    // ルート要素の場合
+    // For root element
     if (!element) {
       return Promise.resolve([
-        new PromptTreeItem('テンプレート', vscode.TreeItemCollapsibleState.Expanded),
-        new PromptTreeItem('テキストプロンプト', vscode.TreeItemCollapsibleState.Expanded)
+        new PromptTreeItem('Templates', vscode.TreeItemCollapsibleState.Expanded),
+        new PromptTreeItem('Text Prompts', vscode.TreeItemCollapsibleState.Expanded)
       ]);
     }
     
-    // プロンプトデータを取得
+    // Get prompt data
     const { templates, simpleTexts } = this.promptManager.getPrompts();
     
-    // テンプレートカテゴリの場合
-    if (element.label === 'テンプレート') {
-      // カテゴリごとにグループ化
+    // For template category
+    if (element.label === 'Templates') {
+      // Group by category
       const categories = this.groupByCategory(templates);
       
-      // カテゴリごとのツリーアイテムを作成
+      // Create tree items for each category
       return Promise.resolve(
         Object.keys(categories).map(category => 
           new PromptTreeItem(
@@ -87,12 +87,12 @@ export class PromptTreeViewProvider implements vscode.TreeDataProvider<PromptTre
       );
     }
     
-    // テキストプロンプトカテゴリの場合
-    if (element.label === 'テキストプロンプト') {
-      // カテゴリごとにグループ化
+    // For text prompt category
+    if (element.label === 'Text Prompts') {
+      // Group by category
       const categories = this.groupByCategory(simpleTexts);
       
-      // カテゴリごとのツリーアイテムを作成
+      // Create tree items for each category
       return Promise.resolve(
         Object.keys(categories).map(category => 
           new PromptTreeItem(
@@ -106,7 +106,7 @@ export class PromptTreeViewProvider implements vscode.TreeDataProvider<PromptTre
       );
     }
     
-    // テンプレートのサブカテゴリの場合
+    // For template subcategory
     const { templates: allTemplates } = this.promptManager.getPrompts();
     const templatesByCategory = this.groupByCategory(allTemplates);
     if (templatesByCategory[element.label]) {
@@ -123,7 +123,7 @@ export class PromptTreeViewProvider implements vscode.TreeDataProvider<PromptTre
       );
     }
     
-    // テキストプロンプトのサブカテゴリの場合
+    // For text prompt subcategory
     const { simpleTexts: allSimpleTexts } = this.promptManager.getPrompts();
     const simpleTextsByCategory = this.groupByCategory(allSimpleTexts);
     if (simpleTextsByCategory[element.label]) {
@@ -143,7 +143,7 @@ export class PromptTreeViewProvider implements vscode.TreeDataProvider<PromptTre
     return Promise.resolve([]);
   }
   
-  // プロンプトをカテゴリでグループ化するヘルパーメソッド
+  // Helper method to group prompts by category
   private groupByCategory<T extends TemplatePrompt | SimpleTextPrompt>(
     prompts: T[]
   ): { [category: string]: T[] } {

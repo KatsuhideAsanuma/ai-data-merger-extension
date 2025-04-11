@@ -387,9 +387,9 @@
           "aiDataMerger.categories": {
             "type": "array",
             "default": [
-              "プロンプト出力",
-              "設計書出力",
-              "参照コード出力"
+              "Prompt Output",
+              "Design Document Output",
+              "Reference Code Output"
             ],
             "description": "%configuration.categories%"
           },
@@ -401,11 +401,11 @@
           "aiDataMerger.promptCategories": {
             "type": "array",
             "default": [
-              "コード生成",
-              "説明要求",
-              "要約",
-              "デバッグ",
-              "一般"
+              "Code Generation",
+              "Explanation Request",
+              "Summary",
+              "Debug",
+              "General"
             ],
             "description": "%configuration.promptCategories%"
           },
@@ -418,16 +418,16 @@
             "type": "array",
             "default": [
               {
-                "name": "コード説明",
-                "text": "以下のコードについて説明してください："
+                "name": "Code Explanation",
+                "text": "Please explain the following code:"
               },
               {
-                "name": "バグ修正",
-                "text": "以下のコードにあるバグを見つけて修正してください："
+                "name": "Bug Fix",
+                "text": "Find and fix bugs in the following code:"
               },
               {
-                "name": "リファクタリング",
-                "text": "以下のコードをより効率的にリファクタリングしてください："
+                "name": "Refactoring",
+                "text": "Refactor the following code to make it more efficient:"
               }
             ],
             "description": "%configuration.promptSnippets%"

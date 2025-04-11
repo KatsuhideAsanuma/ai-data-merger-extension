@@ -18,18 +18,18 @@ export class HistoryTreeViewProvider implements vscode.TreeDataProvider<HistoryT
 
     getChildren(element?: HistoryTreeItem): Thenable<HistoryTreeItem[]> {
         if (!element) {
-            // ルートノードの場合は履歴項目を返す
+            // Return history items for root node
             const history = this.historyManager.getHistory();
             
             return Promise.resolve(history.map((item, index) => {
-                // 日付とファイル名をラベルに使用
+                // Use date and filename for the label
                 const date = new Date(item.timestamp);
                 const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
                 const label = item.name 
                     ? `${item.name} (${formattedDate})`
                     : `${path.basename(item.fileName)} (${formattedDate})`;
                 
-                // ファイル数をカウント
+                // Count total files
                 const totalFiles = Object.values(item.queue).reduce((acc, files) => acc + files.length, 0);
                 
                 return new HistoryTreeItem(
@@ -37,7 +37,7 @@ export class HistoryTreeViewProvider implements vscode.TreeDataProvider<HistoryT
                     vscode.TreeItemCollapsibleState.None,
                     item,
                     index,
-                    `ファイル数: ${totalFiles}`
+                    `Files: ${totalFiles}`
                 );
             }));
         }
@@ -55,14 +55,14 @@ export class HistoryTreeItem extends vscode.TreeItem {
         public readonly description?: string
     ) {
         super(label, collapsibleState);
-        this.contextValue = 'historyItem'; // コンテキストメニュー用の識別子
+        this.contextValue = 'historyItem'; // Identifier for context menu
         this.tooltip = `${label}\n${description || ''}`;
         this.iconPath = {
             light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'history.svg'),
             dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', 'history.svg')
         };
         
-        // コマンドは再実行
+        // Command is re-execution
         this.command = {
             command: 'extension.reexecuteMerge',
             title: 'Re-Execute Merge',

@@ -18,12 +18,12 @@ export class SelectionTreeViewProvider implements vscode.TreeDataProvider<Select
 
     getChildren(element?: SelectionTreeItem): Thenable<SelectionTreeItem[]> {
         if (!element) {
-            // キューに登録されている各カテゴリを親ノードとして返す
+            // Return each category in the queue as parent nodes
             const queue = this.queueManager.getQueue();
             const categories = Object.keys(queue);
             return Promise.resolve(categories.map(cat => new SelectionTreeItem(cat, vscode.TreeItemCollapsibleState.Collapsed, cat, true)));
         } else {
-            // カテゴリノードの場合、子ノードとしてファイルパスを返す
+            // For category nodes, return file paths as child nodes
             if (element.isCategory) {
                 const queue = this.queueManager.getQueue();
                 const files = queue[element.label.toString()] || [];
@@ -52,16 +52,16 @@ export class SelectionTreeItem extends vscode.TreeItem {
             };
             this.description = path.basename(label);
             this.tooltip = label;
-            // ラベルをファイル名だけにする
+            // Set label to just the file name
             this.label = path.basename(label);
-            // ファイルアイコンを設定
+            // Set file icon
             this.iconPath = {
                 light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'file.svg'),
                 dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', 'file.svg')
             };
         } else {
             this.contextValue = 'category';
-            // カテゴリアイコンを設定
+            // Set category icon
             this.iconPath = {
                 light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'folder.svg'),
                 dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', 'folder.svg')
